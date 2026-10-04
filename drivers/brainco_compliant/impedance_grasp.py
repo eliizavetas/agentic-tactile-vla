@@ -40,9 +40,11 @@ The hand address is fixed by the device: 0x7f right, 0x7e left.
 SUDO. The launcher refuses to run without sudo, and sudo STRIPS the
 environment — hence the variables are passed as assignments inside the sudo
 command line. A background thread also cannot type a password, hence `sudo -n`
-everywhere. Warm the ticket with `sudo -v` before starting the bridge, or add
-NOPASSWD entries for pkill, bash run_brainco_grasp_service.sh and
-./brainco-grasp. Otherwise every handover fails silently into FAILED.
+everywhere. Warm the ticket with `sudo -v` before starting the bridge, or
+install the sudoers rule from docs/deployment.md, which keeps exactly the six
+variables passed below and allows only the launcher, the CLI and the two pkill
+calls, all by absolute path. Otherwise every handover fails silently into
+FAILED.
 
 NOT HANDLED HERE. MAX_HOLD_DURATION is a compile-time constant in
 brainco_grasp_service.cpp (120 s). After that time the service opens the hand
@@ -118,7 +120,7 @@ class ImpedanceGrasp:
         """Call brainco-grasp. Returns (returncode, combined output)."""
         try:
             r = subprocess.run(
-                ["sudo", "-n", "./brainco-grasp", *args],
+                ["sudo", "-n", str(SERVICE_DIR / "brainco-grasp"), *args],
                 cwd=str(SERVICE_DIR), capture_output=True, text=True, timeout=timeout)
             return r.returncode, (r.stdout or "") + (r.stderr or "")
         except subprocess.TimeoutExpired:
@@ -213,9 +215,8 @@ class ImpedanceGrasp:
                  f"BRAINCO_GRASP_SERIAL={self.cfg['serial']}",
                  *[f"{k}={os.environ[k]}" for k in (
                      "BRAINCO_GRASP_NOMINAL_GATE", "BRAINCO_GRASP_GENTLE_GATE",
-                     "BRAINCO_GRASP_GATE_ANY_SERIAL", "BRAINCO_GRASP_BINARY",
-                     "BRAINCO_GRASP_LOG_DIR") if k in os.environ],
-                 "bash", "run_brainco_grasp_service.sh"],
+                     "BRAINCO_GRASP_GATE_ANY_SERIAL") if k in os.environ],
+                 "bash", str(SERVICE_DIR / "run_brainco_grasp_service.sh")],
                 cwd=str(SERVICE_DIR),
                 stdout=logf, stderr=subprocess.STDOUT,
                 stdin=subprocess.DEVNULL, start_new_session=True)

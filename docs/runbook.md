@@ -12,7 +12,7 @@ from this repository.
 - [ ] Laptop on the lab network or VPN.
 - [ ] GPU server reachable from the laptop and from the robot.
 - [ ] Emergency stop within reach.
-- [ ] Compliant mode only: on the robot, `sudo -v` to warm the sudo ticket.
+- [ ] Compliant mode only: on the robot, `sudo -v` to warm the sudo ticket, unless the sudoers rule from deployment.md is installed.
 
 ## 2. Terminals
 
@@ -153,8 +153,8 @@ a new set; earlier sessions are never overwritten.
 | camera will not open | stale camera process holds the device | `pkill -f composed_camera; sudo fuser -k /dev/video<id>`, then restart T3 |
 | `Address already in use` | a server is already running on that port | do not start a second one; use the running one |
 | `Giving up to decode frame after 20 retries` | two hand services on the same serial port | stop the extra one, keep exactly one |
-| `could not free the serial port` (compliant handover) | the hand server could not be stopped: no sudo ticket, so `sudo -n pkill` failed | `sudo -v` on the robot, then retry |
-| `no READY` (compliant handover) | sudoers rule lacks the environment tag, so the service never started | fix the rule, see [deployment.md](deployment.md), "Launch rules the client follows" |
+| `could not free the serial port` (compliant handover) | the hand server could not be stopped: no sudo ticket and no sudoers rule, so `sudo -n pkill` failed | `sudo -v` on the robot, then retry |
+| `no READY` (compliant handover) | `sudo` refused the launcher: the sudoers rule is missing, or a passed variable is not in its `env_keep` list | check the rule by hand, see [deployment.md](deployment.md), "Sudoers rule for unattended handovers" |
 | `COMPLIANT_TOO_LATE` | compliant decision arrived after the hand closed | expected behaviour; the grasp stays on the position path |
 | hand completely dead, both hands | both hand processes stopped: the hand server serves both hands | restart T4; check no `brainco_grasp_service` is left running |
 | arm moves but hand does not; `[BrainCo] DRY-RUN` lines | `HAND_ENABLE` not set | restart T7 with `HAND_ENABLE=1` |

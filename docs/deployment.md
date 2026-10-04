@@ -209,15 +209,75 @@ them if you start the service another way.
   `BRAINCO_GRASP_SERIAL`, the two gate paths and, where used, the gate waiver
   `BRAINCO_GRASP_GATE_ANY_SERIAL`.
 * A background thread cannot type a password, so the client calls `sudo -n`.
-  Either warm the ticket with `sudo -v` before starting the bridge, or add a
-  sudoers rule. The rule needs the `SETENV` tag, because of the assignments
-  above. Without it the handover fails silently and shows up only as
-  "no READY". Template, to be adapted with `visudo`:
+  Either warm the ticket with `sudo -v` before starting the bridge, or install
+  the sudoers rule below. Without one of the two the handover fails silently
+  and shows up only as "no READY".
 
-  ```
-  <user> ALL=(root) NOPASSWD:SETENV: /usr/bin/bash run_brainco_grasp_service.sh, \
-      <repo>/drivers/brainco_compliant/brainco-grasp, /usr/bin/pkill
-  ```
+### Sudoers rule for unattended handovers
+
+This rule has not been tested on the robot. Before relying on it, check one
+handover by hand as described at the end of this section.
+
+The rule must not hand root to whoever can edit a file. So the launcher, the
+CLI and the service binary are installed into a root-owned, read-only
+directory, and the rule names them by absolute path:
+
+```bash
+# on the robot, from this repository, after the build step
+sudo install -d -o root -g root -m 755 /opt/brainco_compliant /opt/brainco_compliant/build
+sudo install -o root -g root -m 555 drivers/brainco_compliant/run_brainco_grasp_service.sh \
+    drivers/brainco_compliant/brainco-grasp /opt/brainco_compliant/
+sudo install -o root -g root -m 444 drivers/brainco_compliant/brainco_grasp_cli.py /opt/brainco_compliant/
+sudo install -o root -g root -m 555 drivers/brainco_compliant/build/brainco_grasp_service \
+    /opt/brainco_compliant/build/
+```
+
+Then set `BRAINCO_GRASP_SERVICE_DIR=/opt/brainco_compliant` in `.env`, so the
+client calls the installed copies. Repeat the install after every rebuild.
+
+Create the rule with `sudo visudo -f /etc/sudoers.d/brainco-compliant`:
+
+```
+Cmnd_Alias BRAINCO_LAUNCH = /usr/bin/bash /opt/brainco_compliant/run_brainco_grasp_service.sh
+Cmnd_Alias BRAINCO_CTL = /opt/brainco_compliant/brainco-grasp, \
+                         /usr/bin/pkill -f brainco_hand_server, \
+                         /usr/bin/pkill -f brainco_grasp_service
+Defaults!BRAINCO_LAUNCH env_keep += "BRAINCO_GRASP_PORT BRAINCO_GRASP_SLAVE \
+    BRAINCO_GRASP_SERIAL BRAINCO_GRASP_GATE_ANY_SERIAL \
+    BRAINCO_GRASP_NOMINAL_GATE BRAINCO_GRASP_GENTLE_GATE"
+<user> ALL=(root) NOPASSWD: BRAINCO_LAUNCH, BRAINCO_CTL
+```
+
+Why this form:
+
+* `env_keep` lets exactly the six variables through to the launcher.
+  The `SETENV` tag would let the caller set any variable. `BASH_ENV` alone
+  then turns `bash` into a root shell.
+* `pkill` is allowed only with the two exact arguments the client uses, not
+  for arbitrary processes.
+* The client no longer passes `BRAINCO_GRASP_BINARY` or
+  `BRAINCO_GRASP_LOG_DIR`. With them a caller could make root run any binary
+  or take ownership of any directory. The launcher falls back to its
+  installed defaults.
+
+Check it by hand before the first unattended run, with `brainco_hand_server`
+stopped:
+
+```bash
+sudo -k                                   # drop any cached ticket
+sudo -n -l | grep brainco                 # the rule is listed
+sudo -n BRAINCO_GRASP_PORT=<serial device> BRAINCO_GRASP_SLAVE=0x7e \
+  BRAINCO_GRASP_SERIAL=<hand serial> \
+  BRAINCO_GRASP_NOMINAL_GATE=$BRAINCO_GRASP_NOMINAL_GATE \
+  BRAINCO_GRASP_GENTLE_GATE=$BRAINCO_GRASP_GENTLE_GATE \
+  bash /opt/brainco_compliant/run_brainco_grasp_service.sh
+/opt/brainco_compliant/brainco-grasp status          # second terminal: READY
+```
+
+`sudo: a password is required` means the rule does not match the command.
+`you are not allowed to set the following environment variables` means a
+variable is missing from `env_keep`. Stop the service with Ctrl+C and restart
+`brainco_hand_server` afterwards.
 
 * Slave ids are fixed by the device: left hand `0x7e`, right hand `0x7f`.
 * Never call `stark_reset_default_settings` on the hands. It resets the device
@@ -310,10 +370,11 @@ Notes on the recovered sources:
 ### Run with the bridge
 
 Set the per-hand values in `.env` (`BRAINCO_GRASP_PORT_LEFT`,
-`BRAINCO_GRASP_SERIAL_LEFT`, the two gate variables), then:
+`BRAINCO_GRASP_SERIAL_LEFT`, the two gate variables, and
+`BRAINCO_GRASP_SERVICE_DIR` if the sudoers rule above is installed), then:
 
 ```bash
-sudo -v      # the client calls sudo non-interactively; warm the ticket first
+sudo -v      # not needed with the sudoers rule; otherwise warm the ticket first
 COMPLIANT_DRIVER=1 HAND_ENABLE=1 python scripts/run_agent.py --hand left \
   --handling-cue gently --embodiment-tag NEW_EMBODIMENT --prompt "..."
 ```
