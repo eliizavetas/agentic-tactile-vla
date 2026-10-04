@@ -138,7 +138,16 @@ python scripts/vlm_service.py --port 5599
 ```
 
 The first start downloads Qwen2.5-VL-7B-Instruct. Set `VLM_HOST` and `VLM_PORT`
-on the robot and pass `--vlm` to `run_agent.py`. `--backend mock` starts the
+on the robot and pass `--vlm` to `run_agent.py`.
+
+The service has no authentication. Do not expose its port; reach it from the
+robot through a tunnel and point the robot at the local end:
+
+```bash
+ssh -N -L 5599:localhost:5599 <user>@<GPU server>     # on the robot
+export VLM_HOST=localhost VLM_PORT=5599
+```
+ `--backend mock` starts the
 service without a model for a connectivity check.
 
 ## Compliant mode on hardware

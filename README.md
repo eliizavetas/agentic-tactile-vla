@@ -45,6 +45,35 @@ sensors and no retraining of the policy.
 Platform: Unitree G1 humanoid, BrainCo Revo2 hand, GR00T-N1.6-3B policy,
 GEAR-SONIC whole-body controller.
 
+## Quick start (no robot needed)
+
+The supervisor logic, the recorded logs and the analysis run on any computer
+with Python 3.10 or newer.
+
+```bash
+git clone https://github.com/eliizavetas/agentic-tactile-vla.git
+cd agentic-tactile-vla
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[analysis,dev]"
+pytest
+python scripts/replay_logs.py data/raw/ramp_left_20260819_022049.csv
+python analysis/paper_statistics.py
+python scripts/figures/fig_event.py data/raw/ramp_left_20260819_022049.csv -a 9
+```
+
+| Command | What you should see |
+|---|---|
+| `git clone`, `cd` | a download of about 55 MB that unpacks to about 190 MB, most of it recorded logs |
+| `python3 -m venv`, `source` | a fresh virtual environment, active in this shell |
+| `pip install` | the package with its analysis and test dependencies; no errors |
+| `pytest` | `58 passed` |
+| `replay_logs.py` | a table of 58 recorded correction episodes, each with the support count and verdict this detector gives on the logged signals |
+| `paper_statistics.py` | the paper's intervals and p-values recomputed from its published counts, starting with `Base VLA 46/75 = 61.3%` |
+| `fig_event.py` | per-finger lines for episode 9 and `wrote fig_event.pdf / .png` in the current directory |
+
+Running on a robot needs the hardware and the external software listed under
+"Running it".
+
 ## 2. Results
 
 All numbers in this section are quoted from the paper (`paper/`). They were
@@ -286,7 +315,7 @@ Only the bridge needs the robot.
 ## 6. Installation
 
 ```bash
-git clone <repository url>
+git clone https://github.com/eliizavetas/agentic-tactile-vla.git
 cd agentic-tactile-vla
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[analysis,dev]"
@@ -304,57 +333,139 @@ On the GPU server, for the VLM service: `pip install -e ".[vlm]"`.
 
 ## 7. Running it
 
-Start the processes in this order. Full details and troubleshooting are in
+### What you need to bring
+
+This repository contains the supervisor and its glue code. The rest of the
+stack comes from elsewhere.
+
+* **A policy checkpoint.** GR00T-N1.6-3B fine-tuned for this embodiment. The
+  checkpoint used in the paper and the teleoperation dataset it was trained on
+  are not released. To make your own, collect teleoperated demonstrations on
+  your robot and fine-tune with
+  [Isaac-GR00T](https://github.com/NVIDIA/Isaac-GR00T), using the modality
+  config in [`configs/tactile_g1_config.py`](configs/tactile_g1_config.py)
+  (action horizon 50) and the embodiment tag `NEW_EMBODIMENT`:
+
+  ```bash
+  # GPU server, in the Isaac-GR00T checkout
+  bash examples/finetune.sh \
+    --base-model-path <path to the base GR00T-N1.6-3B model> \
+    --dataset-path <path to your dataset> \
+    --embodiment-tag NEW_EMBODIMENT \
+    --modality-config-path <path to this repository>/configs/tactile_g1_config.py \
+    --output-dir <checkpoint directory>
+  ```
+
+* **Policy server:** [Isaac-GR00T](https://github.com/NVIDIA/Isaac-GR00T), on
+  the GPU server.
+* **Whole-body controller and camera server:**
+  [GR00T-WholeBodyControl](https://github.com/NVlabs/GR00T-WholeBodyControl)
+  (GEAR-SONIC), on the robot. The bridge runs inside its data-collection
+  environment and imports its `gear_sonic` package.
+* **Hand DDS bindings:**
+  [unitree_sdk2_python](https://github.com/unitreerobotics/unitree_sdk2_python),
+  importable in the same environment.
+* **Hand service:** the `brainco_hand_server` binary is built from Unitree's
+  [brainco_hand_service](https://github.com/unitreerobotics/brainco_hand_service),
+  which converts the hand's serial protocol to the `rt/brainco/*` DDS topics.
+* **Stark SDK, only for the compliant driver:** `stark-sdk.h` and
+  `libbc_stark_sdk.so` from BrainCo. They ship inside the Unitree
+  brainco_hand_service repository (`include/` and `lib/<architecture>/`);
+  BrainCo's own examples are at
+  [stark-serialport-example](https://github.com/BrainCoTech/stark-serialport-example).
+
+### Launch order
+
+Start the processes in this order. Each step names the machine and the
+directory it runs in. Full details and troubleshooting are in
 [docs/deployment.md](docs/deployment.md).
 
-**Step 1, policy server (GPU server). Wait for "Server is ready".**
+**Step 1, policy server. Machine: GPU server. Directory: the Isaac-GR00T
+checkout, with its environment active. Wait for "Server is ready".**
 
 ```bash
 python gr00t/eval/run_gr00t_server.py --model-path <checkpoint> \
   --embodiment-tag NEW_EMBODIMENT --port 5555
 ```
 
-**Step 2, port forward (GPU server host), only if the server runs in a container.**
+**Step 2, port forward. Machine: GPU server host. Directory: any. Only if the
+policy server runs in a container.**
 
 ```bash
 socat TCP-LISTEN:5555,fork,reuseaddr TCP:<container address>:5555
 ```
 
-**Step 3, camera (robot).**
+**Step 3, camera. Machine: robot. Directory: the GR00T-WholeBodyControl
+checkout, with its camera environment active.**
 
 ```bash
 python -m gear_sonic.camera.composed_camera --ego-view-camera usb \
   --ego-view-device-id <video device id> --port $CAMERA_PORT
 ```
 
-**Step 4, hand service (robot). Exactly one instance.**
+**Step 4, hand service. Machine: robot. Directory: the brainco_hand_service
+checkout. Exactly one instance.**
 
 ```bash
 sudo ./bin/brainco_hand_server -n $HAND_IFACE
 ```
 
-**Step 5, whole-body controller (robot). Wait for "Init done". The robot stands up.**
+**Step 5, whole-body controller. Machine: robot. Directory:
+`gear_sonic_deploy` inside the GR00T-WholeBodyControl checkout. Wait for
+"Init done". The robot stands up.**
 
 ```bash
 cd ~/GR00T-WholeBodyControl/gear_sonic_deploy && source scripts/setup_env.sh
 ./deploy.sh --input-type zmq_manager real
 ```
 
-**Step 6, keyboard publisher (robot).**
+**Step 6, keyboard publisher. Machine: robot. Directory: this repository, with
+the GR00T-WholeBodyControl data-collection environment active. Exactly one
+instance.**
 
 ```bash
 python scripts/keyboard_publisher.py
 ```
 
-**Step 7, bridge with the supervisor (robot). Wait for "PolicyServer is reachable".**
+**Step 7, bridge with the supervisor. Machine: robot. Directory: this
+repository, same environment as step 6. Wait for "PolicyServer is reachable".**
 
 ```bash
 HAND_ENABLE=1 SLEW_ENABLE=1 python scripts/run_agent.py --hand left \
   --embodiment-tag NEW_EMBODIMENT --prompt "pick up the object and place it down"
 ```
 
+* `HAND_ENABLE=1` sends hand commands to the hand; without it they are only
+  printed (dry run).
+* `SLEW_ENABLE=1` caps the per-tick change of the body token and of the nominal
+  hand command, which smooths jumps between consecutive action chunks.
+
+The instruction must match the task prompt your checkpoint was trained with,
+character for character. The policy is conditioned on that exact string, and a
+different wording is an input it was never trained on. The prompt above is the
+one stored in the recorded logs under `data/raw/`; replace it with your own
+checkpoint's training prompt. To request careful handling, do not edit the
+prompt. Pass `--handling-cue gently` instead, which reaches only the
+supervisor.
+
 Then press `k`, `i`, `p` in the keyboard publisher. Use `--no-agent` for the
 base VLA and `--observe` to log supervisor decisions without acting on them.
+
+**Optional step A, automatic mode selection. Machine: GPU server for the
+service, robot for the tunnel. Directory: this repository.** Start the VLM
+service on the GPU server, open a tunnel from the robot to it, and add `--vlm`
+to step 7. See "Optional: VLM service" in
+[docs/deployment.md](docs/deployment.md).
+
+```bash
+python scripts/vlm_service.py --port 5599              # GPU server
+ssh -N -L 5599:localhost:5599 <user>@<GPU server>      # robot, then VLM_HOST=localhost
+```
+
+**Optional step B, fragile objects. Machine: robot. Directory: this
+repository.** Build the compliant hand service, record its gate files, and
+start step 7 with `COMPLIANT_DRIVER=1`. See "Compliant mode on hardware" in
+[docs/deployment.md](docs/deployment.md).
 
 ## 8. Configuration
 
