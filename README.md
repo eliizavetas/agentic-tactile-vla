@@ -35,6 +35,13 @@ until that finger meets resistance, and then either keeps the corrected grasp
 or hands the hand back to the policy for another attempt. It needs no tactile
 sensors and no retraining of the policy.
 
+<p align="center">
+  <img src="docs/media/fig1_concept.png" width="760"
+       alt="Concept figure: the fixed VLA predicts the approach and hand targets, the execution agent adapts finger closure at contact; without the agent fingers miss contact and the object is dropped">
+  <br>
+  <em>From VLA prediction to execution-time physical adaptation (Fig. 1 of the paper).</em>
+</p>
+
 Platform: Unitree G1 humanoid, BrainCo Revo2 hand, GR00T-N1.6-3B policy,
 GEAR-SONIC whole-body controller.
 
@@ -72,7 +79,10 @@ Same object, same start, with and without supervision (thermos lid, held out):
   </tr>
 </table>
 
-Another held-out object, and a training object for comparison:
+In the base run the lid is lifted and then slips out of the hand. With the
+supervisor, the same object from the same starting position is carried and
+placed. The next pair shows another held-out object and, for comparison, a
+training object:
 
 <table>
   <tr>
@@ -116,40 +126,16 @@ absence of a detected difference, not shown equivalence.
   <em>System architecture (Fig. 2 of the paper).</em>
 </p>
 
-```mermaid
-stateDiagram-v2
-    [*] --> IDLE
-    IDLE --> ARMED: closure upcoming in the action chunk
-    ARMED --> IDLE: 3 or more fingers supported (transparent)
-    ARMED --> ADJUST: fewer than 3 supported
-    ADJUST --> HOLD: FORMED, correction kept
-    ADJUST --> IDLE: EMPTY or CROOKED, override released
-    HOLD --> IDLE: policy reopens the hand
+The fixed VLA sends body-motion tokens to the GEAR-SONIC whole-body controller
+and hand targets to the hand driver. The execution agent sits on the hand path.
+It reads finger positions and motor effort, evaluates the grasp once the policy
+has finished closing, and then either leaves control with the policy or pauses
+the body reference and corrects the fingers. If the corrected grasp is
+rejected, the fingers are released and the policy approaches again. Before the
+hand closes, language cues and the VLM choose between position control and
+current-limited compliant control.
 
-    IDLE --> PREOPEN: closure upcoming, mode compliant, hand still open
-    PREOPEN --> COMPLIANT_WAIT: hand open for 0.8 s
-    COMPLIANT_WAIT --> COMPLIANT_HOLD: hand service holds the object
-    COMPLIANT_WAIT --> IDLE: handover failed
-    COMPLIANT_HOLD --> IDLE: held 8 s and policy reopens
-```
 
-<p align="center">
-  <img src="docs/media/fig1_concept.png" width="760"
-       alt="Concept figure: the fixed VLA predicts the approach and hand targets, the execution agent adapts finger closure at contact; without the agent fingers miss contact and the object is dropped">
-  <br>
-  <em>From VLA prediction to execution-time physical adaptation (Fig. 1 of the paper).</em>
-</p>
-
-**State machine.** Four states on the position path, plus the compliant branch
-described under "Fragile objects". `b_t = 1` pauses progression of the body
-reference; whole-body stabilization stays active.
-
-| State | `b_t` | Hand override | Exit |
-|---|---|---|---|
-| IDLE | 0 | no | a closure is coming up in the action chunk |
-| ARMED | 0 | no | the policy has finished its closure |
-| ADJUST | 1 | yes | verdict or timeout |
-| HOLD | 0 | yes | the policy reopens the hand |
 
 **Selective intervention.** The supervisor decides only once per closure, at
 the moment the policy has finished closing. With at least three supported
@@ -177,6 +163,45 @@ selects compliant control. Otherwise Qwen2.5-VL-7B-Instruct picks one of the
 two modes from the camera image while the hand is still open. Language cues
 win; a missing, late or malformed VLM reply means nominal control. The VLM
 outputs only a mode label.
+
+<details>
+<summary>State machine: IDLE / ARMED / ADJUST / HOLD and the compliant branch</summary>
+
+```mermaid
+stateDiagram-v2
+    [*] --> IDLE
+    IDLE --> ARMED: closure upcoming in the action chunk
+    ARMED --> IDLE: 3 or more fingers supported (transparent)
+    ARMED --> ADJUST: fewer than 3 supported
+    ADJUST --> HOLD: FORMED, correction kept
+    ADJUST --> IDLE: EMPTY or CROOKED, override released
+    HOLD --> IDLE: policy reopens the hand
+
+    IDLE --> PREOPEN: closure upcoming, mode compliant, hand still open
+    PREOPEN --> COMPLIANT_WAIT: hand open for 0.8 s
+    COMPLIANT_WAIT --> COMPLIANT_HOLD: hand service holds the object
+    COMPLIANT_WAIT --> IDLE: handover failed
+    COMPLIANT_HOLD --> IDLE: held 8 s and policy reopens
+```
+
+**State machine.** Four states on the position path and three in the compliant
+branch, which is described under "Fragile objects". `b_t = 1` pauses
+progression of the body reference; whole-body stabilization stays active.
+
+| State | `b_t` | Hand override | Exit |
+|---|---|---|---|
+| IDLE | 0 | no | a closure is coming up in the action chunk |
+| ARMED | 0 | no | the policy has finished its closure |
+| ADJUST | 1 | yes | verdict or timeout |
+| HOLD | 0 | yes | the policy reopens the hand |
+| PREOPEN | 1 | yes | hand commanded fully open for 0.8 s |
+| COMPLIANT_WAIT | 1 | yes | the compliant hand service holds the object, or the handover fails |
+| COMPLIANT_HOLD | 0 | yes | held for at least 8 s and the policy reopens the hand |
+
+The compliant branch runs instead of ARMED and ADJUST when the selected mode is
+compliant and the hand is still open.
+
+</details>
 
 Details: [docs/architecture.md](docs/architecture.md),
 [docs/detector.md](docs/detector.md).
@@ -209,6 +234,18 @@ not that routing is better. The cup is a training object.
   <em>Cup outcomes: damage under position control, intact under compliant control (Fig. 4 of the paper).</em>
 </p>
 
+**Timing matters.** The compliant branch starts only while the hand is still
+open (measured mean flexion below 0.45). The hand is first opened fully, then
+handed to the compliant hand service, which closes and holds. If the compliant
+decision arrives after the hand has already closed, the handover is not started
+and the grasp stays on the position path; the log shows `COMPLIANT_TOO_LATE`.
+This is the failure seen in the one damaged VLM-only trial of the table above,
+where compliant mode was selected after closure had begun and the damage was
+not prevented.
+
+The clips below show the same contrast in motion: under position control the
+cup collapses in the hand, under compliant control it keeps its shape.
+
 <table>
   <tr>
     <td align="center">
@@ -223,15 +260,6 @@ not that routing is better. The cup is a training object.
     </td>
   </tr>
 </table>
-
-**Timing matters.** The compliant branch starts only while the hand is still
-open (measured mean flexion below 0.45). The hand is first opened fully, then
-handed to the compliant hand service, which closes and holds. If the compliant
-decision arrives after the hand has already closed, the handover is not started
-and the grasp stays on the position path; the log shows `COMPLIANT_TOO_LATE`.
-This is the failure seen in the one damaged VLM-only trial of the table above,
-where compliant mode was selected after closure had begun and the damage was
-not prevented.
 
 Compliant control covers closure and holding only, not autonomous transport.
 Details of the handover: [docs/deployment.md](docs/deployment.md).
