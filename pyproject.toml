@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentic-tactile-vla"
+version = "0.1.0"
+description = "Contact-guided execution-time supervision for a fixed VLA policy"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24"]
+
+[project.optional-dependencies]
+# robot side: the bridge also needs gear_sonic and unitree_sdk2py, installed from their own repositories
+robot = ["pyzmq>=25", "msgpack>=1.0", "tyro>=0.8", "opencv-python>=4.8"]
+# GPU server side: the VLM service
+vlm = ["pyzmq>=25", "torch>=2.2", "transformers>=4.49", "accelerate>=0.30", "pillow>=10"]
+analysis = ["pandas>=2.0", "matplotlib>=3.7"]
+dev = ["pytest>=7"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

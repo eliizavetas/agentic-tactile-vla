@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+.pytest_cache/
+
+# local configuration
+.env
+
+# model checkpoints
+checkpoints/
+*.pt
+*.pth
+*.safetensors
+*.ckpt
+
+# run outputs
+agent_logs/
+out/
+*.log
+
+# OS files
+.DS_Store
