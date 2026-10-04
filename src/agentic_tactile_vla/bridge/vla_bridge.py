@@ -42,7 +42,7 @@ import zmq
 
 from agentic_tactile_vla.bridge.groot_client import Gr00tClient as PolicyClient
 from agentic_tactile_vla.compliant import CompliantController
-from agentic_tactile_vla.config import SupervisorConfig, variant_config
+from agentic_tactile_vla.config import FLEXION_CHANNELS, SupervisorConfig, variant_config
 from agentic_tactile_vla.hand import BraincoHandController, init_dds
 from agentic_tactile_vla.modes import ModeSelector
 from agentic_tactile_vla.recorder import Recorder
@@ -690,7 +690,7 @@ def main(config: InferenceConfig):
             compliant_driver = _load_compliant_driver(agent_hand)
     print(f"[agent] hand={agent_hand} enabled={agent_enabled} observe={agent_observe} "
           f"variant={os.environ.get('AGENT_VARIANT', 'S-full')} "
-          f"vlm={os.environ.get('VLM_ENABLE') == '1'}")
+          f"vlm={os.environ.get('VLM_ENABLE') == '1'} adjust={list(FLEXION_CHANNELS)}")
     right_thumb_lock = os.environ.get("RIGHT_THUMB_LOCK") == "1"
     chunk_valid_after = 0.0          # chunks inferred before this time are stale
     last_hand_cmd = [None, None]     # last (left, right) hand references sent

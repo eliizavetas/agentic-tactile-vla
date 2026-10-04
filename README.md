@@ -378,7 +378,9 @@ stack comes from elsewhere.
 
 Start the processes in this order. Each step names the machine and the
 directory it runs in. Full details and troubleshooting are in
-[docs/deployment.md](docs/deployment.md).
+[docs/deployment.md](docs/deployment.md). Once everything is installed, the
+session checklist in [docs/runbook.md](docs/runbook.md) is the short version:
+terminals, keys, switching conditions, logs and safe shutdown.
 
 **Step 1, policy server. Machine: GPU server. Directory: the Isaac-GR00T
 checkout, with its environment active. Wait for "Server is ready".**

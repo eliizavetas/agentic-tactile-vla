@@ -7,7 +7,8 @@
 #   cmake --build build -j4
 #
 # STARK_SDK_DIR must contain stark-sdk.h (directly or under include/) and the
-# SDK shared library (directly or under lib/).
+# SDK shared library (directly, under lib/, or under lib/<processor>/ as in
+# Unitree's brainco_hand_service checkout, e.g. lib/aarch64/ on the robot).
 cmake_minimum_required(VERSION 3.16)
 project(brainco_compliant CXX)
 
@@ -22,7 +23,8 @@ find_path(STARK_SDK_INCLUDE stark-sdk.h
           HINTS ${STARK_SDK_DIR} ${STARK_SDK_DIR}/include REQUIRED)
 # The SDK ships its shared library as libbc_stark_sdk.so.
 find_library(STARK_SDK_LIB NAMES bc_stark_sdk
-             HINTS ${STARK_SDK_DIR} ${STARK_SDK_DIR}/lib REQUIRED)
+             HINTS ${STARK_SDK_DIR} ${STARK_SDK_DIR}/lib
+                   ${STARK_SDK_DIR}/lib/${CMAKE_SYSTEM_PROCESSOR} REQUIRED)
 find_package(Threads REQUIRED)
 
 foreach(target brainco_grasp_service h3_spherical_grasp h2_index_impedance
