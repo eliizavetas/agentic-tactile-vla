@@ -365,9 +365,11 @@ stack comes from elsewhere.
 * **Hand DDS bindings:**
   [unitree_sdk2_python](https://github.com/unitreerobotics/unitree_sdk2_python),
   importable in the same environment.
-* **Hand service:** the `brainco_hand_server` binary is built from Unitree's
-  [brainco_hand_service](https://github.com/unitreerobotics/brainco_hand_service),
-  which converts the hand's serial protocol to the `rt/brainco/*` DDS topics.
+* **Hand service:** the DDS hand service used on the robot
+  (`brainco_hand_service`, binary `brainco_hand_server`), which converts the
+  hand's serial protocol to the `rt/brainco/*` DDS topics. Unitree's public
+  [brainco_hand_service](https://github.com/unitreerobotics/brainco_hand_service)
+  repository exposes the same topics and finger order.
 * **Stark SDK, only for the compliant driver:** `stark-sdk.h` and
   `libbc_stark_sdk.so` from BrainCo. They ship inside the Unitree
   brainco_hand_service repository (`include/` and `lib/<architecture>/`);
@@ -406,7 +408,7 @@ python -m gear_sonic.camera.composed_camera --ego-view-camera usb \
 ```
 
 **Step 4, hand service. Machine: robot. Directory: the brainco_hand_service
-checkout. Exactly one instance.**
+directory. Exactly one instance.**
 
 ```bash
 sudo ./bin/brainco_hand_server -n $HAND_IFACE

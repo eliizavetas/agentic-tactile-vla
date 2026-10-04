@@ -24,7 +24,7 @@ condition is met.
 | T1 policy server | GPU server, in tmux | Isaac-GR00T checkout, its environment active | `python gr00t/eval/run_gr00t_server.py --model-path <checkpoint> --embodiment-tag NEW_EMBODIMENT --port $POLICY_PORT` | `Server is ready` |
 | T2 port forward | GPU server host, in tmux; only if T1 runs in a container | any | `socat TCP-LISTEN:$POLICY_PORT,fork,reuseaddr TCP:<container address>:$POLICY_PORT` | no output; stays running |
 | T3 camera | robot | GR00T-WholeBodyControl checkout, camera environment active | `python -m gear_sonic.camera.composed_camera --ego-view-camera usb --ego-view-device-id <video device id> --port $CAMERA_PORT` | resolution 1280x720 reported |
-| T4 hand service | robot; exactly ONE instance | brainco_hand_service checkout | `sudo ./bin/brainco_hand_server -n $HAND_IFACE` | no `Failed to open`, no `No ttyUSB serial ports found` |
+| T4 hand service | robot; exactly ONE instance | brainco_hand_service directory | `sudo ./bin/brainco_hand_server -n $HAND_IFACE` | no `Failed to open`, no `No ttyUSB serial ports found` |
 | T5 whole-body controller | robot | `gear_sonic_deploy` in the GR00T-WholeBodyControl checkout | `source scripts/setup_env.sh && ./deploy.sh --input-type zmq_manager real` | `Init done`; the robot stands up |
 | T6 keyboard publisher | robot; exactly ONE publisher on its port | this repository, GR00T-WholeBodyControl data-collection environment active | `python scripts/keyboard_publisher.py` | `keys: k / i / p / g` |
 | T7 bridge with supervisor | robot | this repository, same environment as T6 | see below | see below |
