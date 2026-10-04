@@ -15,6 +15,15 @@ not one of the two labels (a rejected reply defaults to nominal control).
 
     python scripts/vlm_service.py --port 5599
     python scripts/vlm_service.py --backend mock      # no model, for wiring tests
+
+The service has no authentication and binds to 127.0.0.1 by default. The
+robot reaches it through an SSH tunnel to the GPU server:
+
+    ssh -N -L 5599:localhost:5599 <user>@<GPU server>    # on the robot
+    export VLM_HOST=localhost VLM_PORT=5599
+
+Use --bind 0.0.0.0 only inside a container whose port is published to the
+host's loopback interface, never on an interface other machines can reach.
 """
 
 import argparse
@@ -68,7 +77,8 @@ def main() -> None:
     ap.add_argument("--backend", choices=["qwen", "mock"], default="qwen")
     ap.add_argument("--model", default="Qwen/Qwen2.5-VL-7B-Instruct")
     ap.add_argument("--port", type=int, default=int(os.environ.get("VLM_PORT", "5599")))
-    ap.add_argument("--bind", default="0.0.0.0")
+    ap.add_argument("--bind", default="127.0.0.1",
+                    help="address to listen on; keep the loopback default and use an SSH tunnel")
     args = ap.parse_args()
 
     backend = MockBackend() if args.backend == "mock" else QwenBackend(args.model)
