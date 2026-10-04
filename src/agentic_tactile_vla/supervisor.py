@@ -38,12 +38,24 @@ must then discard stale queued chunks and generate the next policy chunk from a
 fresh observation, while whole-body stabilization holds the current body
 reference.
 
-Compliant branch. When the mode selector returns compliant control, the hand is
-handed to the current-limited controller as soon as the closure is armed, so
-the position path never applies an initial squeeze. The paper does not map this
-branch onto Table I. Here it is realized as HOLD with `compliant_active` set
-(override on, b_t = 0), left when the policy reopens the hand. The branch
-covers compliant closure and holding only, not autonomous transport.
+Compliant execution branch. It runs instead of ARMED -> ADJUST. The mode is
+parsed as soon as the closure is armed. If it is compliant and the measured
+mean flexion is still below 0.45, the supervisor goes straight to PREOPEN, so a
+fragile object never receives a position-controlled squeeze first.
+
+    State           b_t  Override  Exit condition
+    PREOPEN         1    yes       hand commanded fully open for 0.8 s
+    COMPLIANT_WAIT  1    yes       hand service reports HOLDING, or fails
+    COMPLIANT_HOLD  0    yes       held for at least 8.0 s and the policy reopens
+
+The serial port of the hand has exactly one owner. After PREOPEN the caller
+stops the DDS hand server and starts the current-mode hand service (event
+COMPLIANT_BEGIN); at the end it stops the service and restarts the hand server
+(event COMPLIANT_HANDBACK). While the DDS server is down no hand state arrives,
+so the freshness gate on the hand state is bypassed in these three states, and
+whole-body control keeps the arm in pose while b_t = 1. The paper describes the
+compliant controller but not this sequence; the branch covers compliant closure
+and holding only, not autonomous transport.
 """
 
 from __future__ import annotations
@@ -55,7 +67,6 @@ from typing import Dict, List, Optional
 import numpy as np
 
 from .closure import ClosureDetector
-from .compliant import CompliantController
 from .config import (FLEXION_CHANNELS, NUM_CHANNELS, THUMB_OPPOSITION,
                      CompliantConfig, SupervisorConfig)
 from .contact import ChannelEvidence, ContactDetector
@@ -72,6 +83,13 @@ class State(str, Enum):
     ARMED = "ARMED"
     ADJUST = "ADJUST"
     HOLD = "HOLD"
+    # compliant execution branch (runs instead of ARMED -> ADJUST)
+    PREOPEN = "PREOPEN"
+    COMPLIANT_WAIT = "COMPLIANT_WAIT"
+    COMPLIANT_HOLD = "COMPLIANT_HOLD"
+
+
+COMPLIANT_STATES = (State.PREOPEN, State.COMPLIANT_WAIT, State.COMPLIANT_HOLD)
 
 
 @dataclass
@@ -102,8 +120,7 @@ class SupervisorOutput:
     override: bool                        # supervisor replaces the nominal hand target
     body_gate: int                        # b_t: 1 pauses body-reference progression
     mode: InteractionMode
-    compliant_active: bool = False
-    compliant_command: Optional[np.ndarray] = None   # normalized I_cmd when compliant_active
+    compliant_active: bool = False        # the compliant branch owns the hand
     authority_transition: bool = False    # discard queued chunks, re-infer from fresh observation
     event: Optional[str] = None
     episode: Optional[EpisodeRecord] = None           # set on the tick an episode closes
@@ -121,7 +138,7 @@ class ExecutionSupervisor:
         self.detector = ContactDetector(self.cfg)
         self.corrector = FingerCorrector(self.cfg)
         self.modes = mode_selector or ModeSelector(None)
-        self.compliant = CompliantController(compliant_cfg)
+        self.compliant_cfg = compliant_cfg or CompliantConfig()
         self.reset()
 
     # -- lifecycle ------------------------------------------------------------
@@ -132,12 +149,12 @@ class ExecutionSupervisor:
         self.mode_decision: Optional[ModeDecision] = None
         self.closure.reset()
         self.detector.reset()
-        self.compliant.reset()
         self.modes.new_episode()
         self._nominal = None
         self._issued = None
         self._held = None
-        self._compliant_active = False
+        self._t_phase = 0.0
+        self._stale_reported = False
         self._rearm_blocked = False
         self._term_cmd = 0.0
         self._term_meas = 0.0
@@ -175,7 +192,8 @@ class ExecutionSupervisor:
     # -- main entry -------------------------------------------------------------
     def step(self, t: float, chunk: Optional[np.ndarray], idx: int, q: np.ndarray,
              effort: Optional[np.ndarray] = None, instruction: Optional[str] = None,
-             image: object = None, qdot: Optional[np.ndarray] = None) -> SupervisorOutput:
+             image: object = None, state_age: Optional[float] = None,
+             driver_state: Optional[str] = None) -> SupervisorOutput:
         """Advance the supervisor by one control tick.
 
         chunk        nominal hand targets of the current action chunk, shape (H, 6),
@@ -185,6 +203,9 @@ class ExecutionSupervisor:
         effort       motor-effort proxy, shape (6,); device units, not force
         instruction  operator instruction, parsed for handling cues
         image        current camera frame for the VLM (optional)
+        state_age    age of the hand state sample in seconds (None: not checked)
+        driver_state state of the current-mode hand service client: "HANDOVER",
+                     "HOLDING", "FAILED", ... or None when no driver is attached
         """
         q = np.asarray(q, dtype=float).reshape(-1)[:NUM_CHANNELS]
         effort = (np.zeros(NUM_CHANNELS) if effort is None
@@ -203,16 +224,42 @@ class ExecutionSupervisor:
         cmd_mean = self._mean_flexion(nominal)
         meas_mean = self._mean_flexion(q)
 
+        # Freshness gate. Outside the compliant branch a stale hand state is
+        # not acted on: the state machine does not advance and the detector
+        # receives nothing. In the compliant states the gate is bypassed,
+        # because the DDS hand server is stopped and no state arrives.
+        if (state_age is not None and state_age > self.cfg.max_state_age
+                and self.state not in COMPLIANT_STATES):
+            return self._stale_tick(t, nominal)
+        self._stale_reported = False
+
         handler = {
             State.IDLE: self._idle,
             State.ARMED: self._armed,
             State.ADJUST: self._adjust,
             State.HOLD: self._hold,
+            State.PREOPEN: self._preopen,
+            State.COMPLIANT_WAIT: self._compliant_wait,
+            State.COMPLIANT_HOLD: self._compliant_hold,
         }[self.state]
         out = handler(t, chunk, idx, q, effort, nominal, cmd_mean, meas_mean,
-                      instruction, image, qdot)
+                      instruction, image, driver_state)
         self._issued = out.hand_target.copy()
         return out
+
+    def _stale_tick(self, t: float, nominal: np.ndarray) -> SupervisorOutput:
+        """Hold the current authority without advancing on a stale hand state."""
+        event = None if self._stale_reported else "STALE_STATE"
+        self._stale_reported = True
+        self._below_since = None
+        if self.state is State.ADJUST:
+            self.corrector.hold(t)           # no catch-up jump when the state returns
+            target = self._with_policy_opposition(self.corrector.reference, nominal)
+            return SupervisorOutput(State.ADJUST, target, True, 1, self.mode, event=event)
+        if self.state is State.HOLD:
+            target = self._with_policy_opposition(self._held, nominal)
+            return SupervisorOutput(State.HOLD, target, True, 0, self.mode, event=event)
+        return SupervisorOutput(self.state, nominal.copy(), False, 0, self.mode, event=event)
 
     def _last_issued(self, nominal: np.ndarray) -> np.ndarray:
         """Reference issued on the previous tick.
@@ -226,7 +273,7 @@ class ExecutionSupervisor:
 
     # -- IDLE -----------------------------------------------------------------
     def _idle(self, t, chunk, idx, q, effort, nominal, cmd_mean, meas_mean,
-              instruction, image, qdot) -> SupervisorOutput:
+              instruction, image, driver_state) -> SupervisorOutput:
         cfg = self.cfg
         event = None
         if self._rearm_blocked:
@@ -244,10 +291,10 @@ class ExecutionSupervisor:
             # The hand is open: let the VLM look at the scene, once per episode.
             self.modes.maybe_request(image, instruction)
             if self.closure.upcoming_closure(chunk, idx):
-                return self._arm(t, q, nominal, cmd_mean, meas_mean, instruction, qdot)
+                return self._arm(t, q, nominal, cmd_mean, meas_mean, instruction)
         return SupervisorOutput(State.IDLE, nominal.copy(), False, 0, self.mode, event=event)
 
-    def _arm(self, t, q, nominal, cmd_mean, meas_mean, instruction, qdot) -> SupervisorOutput:
+    def _arm(self, t, q, nominal, cmd_mean, meas_mean, instruction) -> SupervisorOutput:
         self.detector.reset()
         self._arm_targets = nominal[_FLEX].copy()
         self._arm_peak = cmd_mean
@@ -257,29 +304,95 @@ class ExecutionSupervisor:
         self.mode_decision = self.modes.decide(instruction)
         self.mode = self.mode_decision.mode
 
+        event = "ARMED"
         if self.mode is InteractionMode.COMPLIANT:
-            # Hand the closure to the current-limited controller before any
-            # position-mode squeeze is issued.
-            self.state = State.HOLD
-            self._compliant_active = True
-            self._held = q.copy()
-            self._term_cmd = cmd_mean
-            self._term_meas = meas_mean
-            self.compliant.reset()
-            command = self.compliant.step(t, q, qdot=qdot)
-            return SupervisorOutput(State.HOLD, self._with_policy_opposition(self._held, nominal),
-                                    True, 0, self.mode, compliant_active=True,
-                                    compliant_command=command, authority_transition=True,
-                                    event="COMPLIANT_ENGAGED")
+            if meas_mean < self.compliant_cfg.early_max_flexion:
+                # Early trigger: the hand is still open, so go straight to the
+                # compliant branch. The object never receives a
+                # position-controlled squeeze first.
+                self.state = State.PREOPEN
+                self._t_phase = t
+                self._term_cmd = cmd_mean
+                return SupervisorOutput(State.PREOPEN, np.zeros(NUM_CHANNELS), True, 1,
+                                        self.mode, compliant_active=True,
+                                        authority_transition=True, event="PREOPEN")
+            # The hand has already closed on the object under position control;
+            # a handover now would come too late. Continue on the position path.
+            event = "COMPLIANT_TOO_LATE"
 
         self.state = State.ARMED
         evidence = self.detector.update(t, self._last_issued(nominal), q)
         return SupervisorOutput(State.ARMED, nominal.copy(), False, 0, self.mode,
-                                event="ARMED", evidence=evidence)
+                                event=event, evidence=evidence)
+
+    # -- compliant execution branch ---------------------------------------------
+    def _preopen(self, t, chunk, idx, q, effort, nominal, cmd_mean, meas_mean,
+                 instruction, image, driver_state) -> SupervisorOutput:
+        """Body reference paused, hand commanded fully open. The hand service
+        refuses to initialize unless the hand is open."""
+        open_hand = np.zeros(NUM_CHANNELS)
+        if t - self._t_phase < self.compliant_cfg.preopen - _EPS:
+            return SupervisorOutput(State.PREOPEN, open_hand, True, 1, self.mode,
+                                    compliant_active=True)
+        self._t_phase = t
+        if driver_state is None:
+            # No hand service attached: keep the hand open under override. No
+            # compliant closure takes place, and no position squeeze either.
+            self.state = State.COMPLIANT_HOLD
+            self._held = open_hand
+            return SupervisorOutput(State.COMPLIANT_HOLD, open_hand, True, 0, self.mode,
+                                    compliant_active=True, event="COMPLIANT_UNAVAILABLE")
+        self.state = State.COMPLIANT_WAIT
+        return SupervisorOutput(State.COMPLIANT_WAIT, open_hand, True, 1, self.mode,
+                                compliant_active=True, event="COMPLIANT_BEGIN")
+
+    def _compliant_wait(self, t, chunk, idx, q, effort, nominal, cmd_mean, meas_mean,
+                        instruction, image, driver_state) -> SupervisorOutput:
+        """The DDS hand server is being stopped and the hand service started.
+        The body reference stays paused until the service holds the object."""
+        open_hand = np.zeros(NUM_CHANNELS)
+        if driver_state == "HOLDING":
+            self.state = State.COMPLIANT_HOLD
+            self._t_phase = t
+            self._term_cmd = cmd_mean
+            self._below_since = None
+            return SupervisorOutput(State.COMPLIANT_HOLD, open_hand, True, 0, self.mode,
+                                    compliant_active=True, event="COMPLIANT_HOLDING")
+        if driver_state in ("FAILED", None):
+            return self._leave_compliant(nominal, "COMPLIANT_FAILED")
+        return SupervisorOutput(State.COMPLIANT_WAIT, open_hand, True, 1, self.mode,
+                                compliant_active=True)
+
+    def _compliant_hold(self, t, chunk, idx, q, effort, nominal, cmd_mean, meas_mean,
+                        instruction, image, driver_state) -> SupervisorOutput:
+        """The hand service holds the object; the body gate is released."""
+        cfg = self.cfg
+        self._term_cmd = max(self._term_cmd, cmd_mean)
+        if driver_state == "FAILED":
+            return self._leave_compliant(nominal, "COMPLIANT_FAILED")
+        held_long_enough = (t - self._t_phase) >= self.compliant_cfg.min_hold - _EPS
+        reopening = cmd_mean <= self._term_cmd - cfg.reopen_delta + _EPS
+        if self._sustained(t, held_long_enough and reopening):
+            return self._leave_compliant(nominal, "COMPLIANT_HANDBACK")
+        return SupervisorOutput(State.COMPLIANT_HOLD, np.zeros(NUM_CHANNELS), True, 0,
+                                self.mode, compliant_active=True)
+
+    def _leave_compliant(self, nominal, event) -> SupervisorOutput:
+        """Return the hand to the position path and block re-entry.
+
+        No measured flexion exists for the compliant grasp, so the measured
+        reference level for rearming is the mean of the grasp configuration.
+        """
+        self.state = State.IDLE
+        self._held = None
+        self._term_meas = self._mean_flexion(np.asarray(self.compliant_cfg.target))
+        self._block_rearm()
+        return SupervisorOutput(State.IDLE, nominal.copy(), False, 0, self.mode,
+                                authority_transition=True, event=event)
 
     # -- ARMED ----------------------------------------------------------------
     def _armed(self, t, chunk, idx, q, effort, nominal, cmd_mean, meas_mean,
-               instruction, image, qdot) -> SupervisorOutput:
+               instruction, image, driver_state) -> SupervisorOutput:
         cfg = self.cfg
         evidence = self.detector.update(t, self._last_issued(nominal), q)   # position support only
         self._arm_peak = max(self._arm_peak, cmd_mean)
@@ -347,7 +460,7 @@ class ExecutionSupervisor:
 
     # -- ADJUST ---------------------------------------------------------------
     def _adjust(self, t, chunk, idx, q, effort, nominal, cmd_mean, meas_mean,
-                instruction, image, qdot) -> SupervisorOutput:
+                instruction, image, driver_state) -> SupervisorOutput:
         cfg = self.cfg
         # Evidence about the reference issued on the previous tick.
         evidence = self.detector.update(t, self.corrector.reference, q, effort)
@@ -399,26 +512,15 @@ class ExecutionSupervisor:
 
     # -- HOLD -----------------------------------------------------------------
     def _hold(self, t, chunk, idx, q, effort, nominal, cmd_mean, meas_mean,
-              instruction, image, qdot) -> SupervisorOutput:
+              instruction, image, driver_state) -> SupervisorOutput:
         cfg = self.cfg
-        if self._compliant_active:
-            # No terminal assessment exists in this branch; the reference
-            # levels are the highest commanded and measured mean flexion seen.
-            self._term_cmd = max(self._term_cmd, cmd_mean)
-            self._term_meas = max(self._term_meas, meas_mean)
-
         if self._sustained(t, cmd_mean <= self._term_cmd - cfg.reopen_delta + _EPS):
             # The policy reopens the hand: release the retained override.
             self.state = State.IDLE
-            self._compliant_active = False
             self._held = None
             self._block_rearm()
             return SupervisorOutput(State.IDLE, nominal.copy(), False, 0, self.mode,
                                     authority_transition=True, event="RELEASED")
 
         target = self._with_policy_opposition(self._held, nominal)
-        if self._compliant_active:
-            command = self.compliant.step(t, q, qdot=qdot)
-            return SupervisorOutput(State.HOLD, target, True, 0, self.mode,
-                                    compliant_active=True, compliant_command=command)
         return SupervisorOutput(State.HOLD, target, True, 0, self.mode)

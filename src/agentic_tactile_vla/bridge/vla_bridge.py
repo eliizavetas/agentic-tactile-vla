@@ -363,23 +363,30 @@ def _load_compliant_driver(hand):
         return None
 
 
-def _route_compliant(driver, sup_out, engaged):
-    """Start or end a compliant grasp on the hand service; returns the new flag.
+def _route_compliant(driver, sup_out):
+    """Act on the supervisor's compliant-branch events.
 
-    The service takes exclusive ownership of the hand's serial port, so the
-    regular hand server is stopped for the duration and restarted afterwards.
-    Both calls return immediately; the handover runs in a background thread.
+    COMPLIANT_BEGIN     after PREOPEN: stop the DDS hand server and start the
+                        current-mode hand service (the client does both)
+    COMPLIANT_HANDBACK  stop the service and restart the DDS hand server
+    COMPLIANT_FAILED    same cleanup after a failed handover
+
+    The serial port of the hand has exactly one owner at any time. Both calls
+    return immediately; the handover runs in a background thread of the client.
     """
     if driver is None:
-        return False
-    if sup_out.event == "COMPLIANT_ENGAGED" and not engaged:
+        return
+    if sup_out.event == "COMPLIANT_BEGIN":
         driver.begin(profile=os.environ.get("COMPLIANT_PROFILE", "gentle"),
                      shape=os.environ.get("COMPLIANT_SHAPE", "sphere"))
-        return True
-    if engaged and not sup_out.compliant_active:
+    elif sup_out.event in ("COMPLIANT_HANDBACK", "COMPLIANT_FAILED"):
         driver.handback()
-        return False
-    return engaged
+
+
+def _supervisor_inputs(hand_state, driver):
+    """Age of the hand state sample and the state of the hand-service client."""
+    age = time.monotonic() - hand_state.stamp
+    return age, (None if driver is None else driver.state)
 
 
 # Most recent ego-view frame, shared with the mode-selection VLM request.
@@ -670,7 +677,6 @@ def main(config: InferenceConfig):
     supervisor = None
     recorder = None
     compliant_driver = None  # current-mode hand service client (drivers/brainco_compliant)
-    compliant_engaged = False
     if agent_enabled:
         vlm_query = None
         if os.environ.get("VLM_ENABLE") == "1":
@@ -680,7 +686,7 @@ def main(config: InferenceConfig):
             mode_selector=ModeSelector(vlm_query),
         )
         recorder = Recorder(hand=agent_hand)
-        if os.environ.get("COMPLIANT_DRIVER") == "1":
+        if os.environ.get("COMPLIANT_DRIVER") == "1" and not agent_observe:
             compliant_driver = _load_compliant_driver(agent_hand)
     print(f"[agent] hand={agent_hand} enabled={agent_enabled} observe={agent_observe} "
           f"variant={os.environ.get('AGENT_VARIANT', 'S-full')} "
@@ -863,19 +869,20 @@ def main(config: InferenceConfig):
                         try:
                             _hand_state = _get_brainco().hand(agent_hand).read()
                             _now = time.monotonic()
+                            _age, _drv = _supervisor_inputs(_hand_state, compliant_driver)
                             sup_out = supervisor.step(
                                 _now, None, 0, _hand_state.q, _hand_state.effort,
                                 instruction=(os.environ.get("AGENT_HANDLING_CUE")
                                              or language_prompt_ref[0]),
                                 image=_LATEST_FRAME[0],
+                                state_age=_age, driver_state=_drv,
                             )
                             recorder.log(_now, sup_out, _hand_state.q)
                             if sup_out.event:
                                 print(f"[agent] {sup_out.event} state={sup_out.state.value} "
                                       f"mode={sup_out.mode.value}", flush=True)
                             agent_gate = sup_out.body_gate == 1
-                            compliant_engaged = _route_compliant(
-                                compliant_driver, sup_out, compliant_engaged)
+                            _route_compliant(compliant_driver, sup_out)
                             if sup_out.authority_transition:
                                 chunk_valid_after = _now
                             if sup_out.override:
@@ -930,12 +937,14 @@ def main(config: InferenceConfig):
                             _hand_state = _get_brainco().hand(agent_hand).read()
                             if _hand_state is not None:
                                 _now = time.monotonic()
+                                _age, _drv = _supervisor_inputs(_hand_state, compliant_driver)
                                 sup_out = supervisor.step(
                                     _now, _chunk, current_idx,
                                     _hand_state.q, _hand_state.effort,
                                     instruction=(os.environ.get("AGENT_HANDLING_CUE")
                                                  or language_prompt_ref[0]),
                                     image=_LATEST_FRAME[0],
+                                    state_age=_age, driver_state=_drv,
                                 )
                                 recorder.log(_now, sup_out, _hand_state.q)
                                 if sup_out.event:
@@ -968,14 +977,13 @@ def main(config: InferenceConfig):
                             left_hand_joints = _ref.reshape(left_hand_joints.shape)
                         else:
                             right_hand_out = _ref.reshape(right_hand_joints.shape)
-                    # Compliant branch: the hand is handed to the current-limited
-                    # grasp service when the driver is attached (COMPLIANT_DRIVER=1).
-                    # Without it the position reference above keeps the hand where
-                    # it was when the branch engaged, so no position-mode squeeze
-                    # occurs.
+                    # Compliant branch: after PREOPEN the hand is handed to the
+                    # current-limited hand service (COMPLIANT_DRIVER=1). While the
+                    # service owns the serial port the DDS hand server is down and
+                    # the position references below reach no one. Without the
+                    # driver the hand is simply kept open under override.
                     if sup_out is not None and not agent_observe:
-                        compliant_engaged = _route_compliant(
-                            compliant_driver, sup_out, compliant_engaged)
+                        _route_compliant(compliant_driver, sup_out)
                     # THUMBLOCK-PATCH: optional workaround for a right thumb that
                     # latches on the first flexion command (RIGHT_THUMB_LOCK=1).
                     if right_thumb_lock:

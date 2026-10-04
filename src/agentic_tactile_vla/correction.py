@@ -89,6 +89,11 @@ class FingerCorrector:
                     self.exhausted[i] = True
         return self.reference.copy()
 
+    def hold(self, t: float) -> None:
+        """Skip reference advancement up to time `t` (stale hand state)."""
+        if self._t_step is not None:
+            self._t_step = max(self._t_step, t)
+
     def elapsed(self, t: float) -> float:
         return 0.0 if self._t_start is None else t - self._t_start
 

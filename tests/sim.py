@@ -51,15 +51,47 @@ def make_chunk(t, horizon=50, **kw):
     return np.vstack([policy_target(t + k * DT, **kw) for k in range(horizon)])
 
 
-def run(supervisor, hand, duration, instruction=None, **policy_kw):
+class FakeDriver:
+    """Stands in for the hand-service client: HANDOVER for `delay` seconds
+    after begin(), then HOLDING (or FAILED), IDLE after handback()."""
+
+    def __init__(self, delay=1.0, fail=False):
+        self.state, self.delay, self.fail = "IDLE", delay, fail
+        self._t_begin = None
+        self.calls = []
+
+    def begin(self, t):
+        self.calls.append("begin")
+        self.state, self._t_begin = "HANDOVER", t
+
+    def handback(self):
+        self.calls.append("handback")
+        self.state = "IDLE"
+
+    def tick(self, t):
+        if self.state == "HANDOVER" and t - self._t_begin >= self.delay:
+            self.state = "FAILED" if self.fail else "HOLDING"
+
+
+def run(supervisor, hand, duration, instruction=None, driver=None, state_age=None,
+        **policy_kw):
     """Run the closed loop; body-reference time stops while b_t = 1."""
     outputs = []
     t_policy = 0.0
     for k in range(int(round(duration / DT))):
         t = k * DT
         chunk = make_chunk(t_policy, **policy_kw)
+        if driver is not None:
+            driver.tick(t)
+        age = state_age(t) if callable(state_age) else state_age
         out = supervisor.step(t, chunk, 0, hand.q.copy(), hand.effort.copy(),
-                              instruction=instruction)
+                              instruction=instruction, state_age=age,
+                              driver_state=None if driver is None else driver.state)
+        if driver is not None:
+            if out.event == "COMPLIANT_BEGIN":
+                driver.begin(t)
+            elif out.event in ("COMPLIANT_HANDBACK", "COMPLIANT_FAILED"):
+                driver.handback()
         hand.apply(out.hand_target)
         if out.body_gate == 0:
             t_policy += DT

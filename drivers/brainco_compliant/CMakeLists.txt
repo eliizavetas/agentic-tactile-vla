@@ -20,7 +20,8 @@ endif()
 set(STARK_SDK_DIR "" CACHE PATH "Root of the BrainCo Stark SDK")
 find_path(STARK_SDK_INCLUDE stark-sdk.h
           HINTS ${STARK_SDK_DIR} ${STARK_SDK_DIR}/include REQUIRED)
-find_library(STARK_SDK_LIB NAMES bc_stark_sdk stark-sdk stark_sdk
+# The SDK ships its shared library as libbc_stark_sdk.so.
+find_library(STARK_SDK_LIB NAMES bc_stark_sdk
              HINTS ${STARK_SDK_DIR} ${STARK_SDK_DIR}/lib REQUIRED)
 find_package(Threads REQUIRED)
 

@@ -83,7 +83,7 @@ cd ~/GR00T-WholeBodyControl/gear_sonic_deploy && source scripts/setup_env.sh
 ./deploy.sh --input-type zmq_manager real
 ```
 
-### 6. Keyboard publisher (robot)
+### 6. Keyboard publisher (robot) — exactly one instance
 
 ```bash
 source ~/GR00T-WholeBodyControl/.venv_data_collection/bin/activate
@@ -154,21 +154,68 @@ autonomous transport.
 
 ### How the handover works
 
-The serial port of a hand has one owner. When the supervisor engages the
-compliant branch, the client `impedance_grasp.py` does the following in a
-background thread:
+The serial port of a hand has exactly one owner at any time: either the DDS
+hand server (`brainco_hand_server`) or the compliant service. The compliant
+branch therefore runs as a fixed sequence, instead of ARMED and ADJUST.
 
-1. remembers how `brainco_hand_server` was started and stops it
-2. starts the grasp service for the supervised hand and waits for `READY`
-3. sends `START sphere gentle` and waits for `HOLDING`
-4. when the policy reopens the hand (or on key `i`), stops the service and
-   restarts `brainco_hand_server`
+| Step | Supervisor state | Body reference | What happens |
+|---|---|---|---|
+| 1 | PREOPEN | paused | the hand is commanded fully open for 0.8 s; the service refuses to initialize on a closed hand |
+| 2 | COMPLIANT_WAIT | paused | the DDS hand server is stopped, the compliant service is started, the client waits for `READY`, sends `START` and waits for `HOLDING` |
+| 3 | COMPLIANT_HOLD | released | the service closes compliantly and holds the object |
+| 4 | back to IDLE | released | handback: the service is stopped and the DDS hand server restarted |
 
-The handover takes several seconds. While the service owns the port the hand
-publishes no DDS state, so the hand positions in the policy observation are
-the last ones received before the handover. The hand must be open when the
-handover starts; the supervisor engages the branch when the closure is armed,
-before the fingers close.
+* **Early trigger.** The mode is parsed as soon as the closure is armed. If it
+  is compliant and the measured mean flexion is below 0.45, the supervisor goes
+  straight to PREOPEN, so a fragile object never gets a position-controlled
+  squeeze first. If the hand has already closed past 0.45 the handover is not
+  started and the log shows `COMPLIANT_TOO_LATE`.
+* **Arm pose.** While the body reference is paused no motion token is sent and
+  whole-body control keeps the arm in pose. This covers the seconds in which
+  the DDS hand server is down.
+* **No hand state during the grasp.** While the service owns the port no DDS
+  hand state arrives. Outside the compliant branch the supervisor ignores a
+  hand state older than 0.5 s; in PREOPEN, COMPLIANT_WAIT and COMPLIANT_HOLD
+  this freshness gate is bypassed. The hand positions in the policy observation
+  are the last ones received before the handover.
+* **Minimum hold.** Handback is allowed only after the hold has lasted 8.0 s,
+  and then when the policy reopens the hand. Key `i` hands back at once.
+* **Failure.** If the service does not reach `READY` or `HOLDING`, the client
+  reports `FAILED`, restores the DDS hand server, and the supervisor returns
+  the hand to the policy (`COMPLIANT_FAILED`).
+
+### Launch rules the client follows
+
+These are implemented in `drivers/brainco_compliant/impedance_grasp.py`. Keep
+them if you start the service another way.
+
+* The service binary puts the terminal into raw mode and block-buffers its
+  standard output when that is a pipe. It is launched with standard output and
+  error redirected to a log file, standard input from `/dev/null`, and in its
+  own session. `READY` is detected by polling the status socket, never by
+  reading its standard output.
+* The launcher must run as root, and `sudo` strips the environment. The
+  per-hand settings are therefore passed as assignments inside the `sudo`
+  command line: `BRAINCO_GRASP_PORT`, `BRAINCO_GRASP_SLAVE`,
+  `BRAINCO_GRASP_SERIAL`, the two gate paths and, where used, the gate waiver
+  `BRAINCO_GRASP_GATE_ANY_SERIAL`.
+* A background thread cannot type a password, so the client calls `sudo -n`.
+  Either warm the ticket with `sudo -v` before starting the bridge, or add a
+  sudoers rule. The rule needs the `SETENV` tag, because of the assignments
+  above. Without it the handover fails silently and shows up only as
+  "no READY". Template, to be adapted with `visudo`:
+
+  ```
+  <user> ALL=(root) NOPASSWD:SETENV: /usr/bin/bash run_brainco_grasp_service.sh, \
+      <repo>/drivers/brainco_compliant/brainco-grasp, /usr/bin/pkill
+  ```
+
+* Slave ids are fixed by the device: left hand `0x7e`, right hand `0x7f`.
+* Never call `stark_reset_default_settings` on the hands. It resets the device
+  ids and the bus rate, after which neither the DDS hand server nor the
+  service finds the hand. Nothing in this repository calls it.
+* Run exactly one keyboard publisher on its port. A second one cannot bind the
+  port, and keys typed into it never reach the bridge.
 
 ### Build
 
@@ -179,8 +226,8 @@ STARK_SDK_DIR=<path to the BrainCo Stark SDK> bash build_brainco_grasp_service.s
 
 This builds `brainco_grasp_service` and the three gate diagnostics into
 `build/`. `CMakeLists.txt` was written for this repository because the original
-build file was not recovered; adjust the SDK library name in it if your SDK
-version uses another one.
+build file was not recovered. It links the SDK shared library
+`libbc_stark_sdk.so`.
 
 ### Gate files
 
@@ -262,9 +309,9 @@ COMPLIANT_DRIVER=1 HAND_ENABLE=1 python scripts/run_agent.py --hand left \
   --handling-cue gently --embodiment-tag NEW_EMBODIMENT --prompt "..."
 ```
 
-Without `COMPLIANT_DRIVER=1` the compliant branch holds the hand at the
-position it had when the branch engaged: the position path applies no squeeze,
-and no compliant closure takes place.
+Without `COMPLIANT_DRIVER=1` the compliant branch opens the hand and keeps it
+open under override: the position path applies no squeeze, and no compliant
+closure takes place.
 
 The service can also be driven by hand, with `brainco_hand_server` stopped:
 

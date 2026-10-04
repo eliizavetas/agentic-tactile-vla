@@ -73,6 +73,12 @@ class SupervisorConfig:
     reopen_delta: float = 0.05     # decrease in mean flexion relative to terminal assessment
     reopen_hold: float = 0.12      # ... sustained for this long [s]
 
+    # --- hand-state freshness (not in the paper; value of the deployed system)
+    # Outside the compliant branch the supervisor does not act on a hand state
+    # older than this [s]. The gate is bypassed in the compliant states, where
+    # no DDS state arrives because the hand server is stopped.
+    max_state_age: float = 0.5
+
     # --- ablation switches (Sec. IV-C); the defaults are the full supervisor
     selective: bool = True         # False: intervene at every closure (U-* variants)
     use_effort: bool = True        # False: position stall only (S-position, U-stall)
@@ -125,6 +131,15 @@ class CompliantConfig:
     # Predefined grasp configuration the fingers are driven toward. The paper
     # does not list it; set it for the grasp being evaluated.
     target: Tuple[float, ...] = (0.70, 0.70, 0.75, 0.75, 0.75, 0.75)
+
+    # --- handover to the current-mode hand service -------------------------
+    # None of the three values below is reported in the paper. They are the
+    # values of the deployed handover sequence.
+    preopen: float = 0.8           # hand commanded fully open for this long [s]
+    # The compliant branch is entered only while the measured mean flexion is
+    # below this level, i.e. before the position path has closed on the object.
+    early_max_flexion: float = 0.45
+    min_hold: float = 8.0          # no handback sooner than this after the hold begins [s]
 
     def __post_init__(self) -> None:
         if len(self.target) != NUM_CHANNELS:

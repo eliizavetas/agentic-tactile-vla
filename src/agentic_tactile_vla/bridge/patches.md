@@ -43,10 +43,12 @@ behaves as the base VLA.
    new inference is triggered. While the new chunk is pending the supervisor
    keeps stepping on the hand and no motion token is sent.
 5. Compliant branch: with `COMPLIANT_DRIVER=1` the bridge loads the client in
-   `drivers/brainco_compliant/impedance_grasp.py`. When the branch engages it
-   starts a compliant grasp on the hand service, and when the branch ends (the
-   policy reopens the hand, or key `i`) it returns the hand. Without the
-   driver the hand is held at the position it had when the branch engaged.
+   `drivers/brainco_compliant/impedance_grasp.py` and passes its state to the
+   supervisor every tick, together with the age of the hand state. On the
+   event `COMPLIANT_BEGIN` (after PREOPEN) the client stops the DDS hand
+   server and starts the hand service; on `COMPLIANT_HANDBACK`,
+   `COMPLIANT_FAILED` or key `i` it stops the service and restarts the hand
+   server. Without the driver the hand is kept open under override.
 6. Key `i` (return to the initial pose) resets the supervisor.
 
 Environment variables read by the bridge:

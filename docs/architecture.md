@@ -51,12 +51,12 @@ In code this is `ExecutionSupervisor.step(...)` returning a `SupervisorOutput`:
 
 | Field | Meaning |
 |---|---|
-| `state` | IDLE, ARMED, ADJUST or HOLD |
+| `state` | IDLE, ARMED, ADJUST or HOLD, or one of the compliant-branch states |
 | `hand_target` | the six position references to issue this tick |
 | `override` | the supervisor replaces the nominal hand target |
 | `body_gate` | `b_t`; 1 pauses progression of the body reference |
 | `mode` | nominal or compliant |
-| `compliant_active`, `compliant_command` | compliant branch engaged, and its current-limited command |
+| `compliant_active` | the compliant branch owns the hand |
 | `authority_transition` | the caller must discard queued chunks and re-infer |
 | `episode` | summary of an assessed closure, on the tick it closes |
 
@@ -78,6 +78,11 @@ stateDiagram-v2
     ADJUST --> HOLD: FORMED, correction retained
     ADJUST --> IDLE: EMPTY or CROOKED, override released
     HOLD --> IDLE: policy reopens the hand
+    IDLE --> PREOPEN: closure upcoming, mode compliant, mean flexion below 0.45
+    PREOPEN --> COMPLIANT_WAIT: hand open for 0.8 s
+    COMPLIANT_WAIT --> COMPLIANT_HOLD: hand service holds the object
+    COMPLIANT_WAIT --> IDLE: handover failed
+    COMPLIANT_HOLD --> IDLE: held 8.0 s and policy reopens (handback)
 ```
 
 **IDLE.** The nominal target passes through. While the hand is open, one VLM
@@ -164,6 +169,32 @@ given the task text with the handling cues removed.
 The mode is chosen before closure because a fragile object may deform before
 proprioceptive resistance becomes detectable.
 
+## Compliant execution branch
+
+When the selected mode is compliant, a separate branch runs instead of
+ARMED -> ADJUST. The mode is parsed as soon as the closure is armed. If it is
+compliant and the measured mean flexion is below 0.45, the supervisor goes
+straight to PREOPEN, so the object never receives a position-controlled
+squeeze first.
+
+| State | `b_t` | Override | Exit condition |
+|---|---|---|---|
+| PREOPEN | 1 | yes | hand commanded fully open for 0.8 s |
+| COMPLIANT_WAIT | 1 | yes | the hand service reports that it holds the object, or the handover fails |
+| COMPLIANT_HOLD | 0 | yes | held for at least 8.0 s and the policy reopens the hand |
+
+The serial port of the hand has exactly one owner. After PREOPEN the DDS hand
+server is stopped and the current-mode hand service is started; at handback
+the service is stopped and the DDS hand server restarted. While the body
+reference is paused, whole-body control keeps the arm in pose. No hand state
+arrives while the DDS server is down, so the freshness gate on the hand state
+(0.5 s outside this branch) is bypassed in these three states.
+
+The paper describes the compliant controller and that it is activated before
+closure. It does not describe this sequence; the states, the 0.45 level, the
+0.8 s and the 8.0 s are those of the deployed handover. The operational rules
+are in `docs/deployment.md`.
+
 ## Compliant controller
 
 ```
@@ -197,6 +228,7 @@ reported parameters.
 | Numeric travel limits | Not reported. `travel_limit` defaults to 0.98 on the flexion channels, the value of the teleoperation closed-hand preset. |
 | Velocity smoothing factor | Not reported. `velocity_alpha = 0.3`. |
 | Compliant grasp configuration | Not reported. `CompliantConfig.target` holds a default to be set per grasp. |
-| Compliant branch in the state table | Realized as HOLD with the compliant controller engaged at arming; left when the policy reopens the hand. |
+| Compliant branch in the state table | PREOPEN, COMPLIANT_WAIT and COMPLIANT_HOLD, see "Compliant execution branch". |
+| Hand-state freshness | A hand state older than 0.5 s is not acted on outside the compliant branch. |
 | Safety logic of the compliant hand service | Closing-speed cap, setpoint ramp, watchdogs and start gates; see `drivers/brainco_compliant/README.md`. |
 | Ablation variants | U-stall, U-full, S-position, S-retain and S-full are switches in `config.py`, written from their description in Sec. IV-C. |

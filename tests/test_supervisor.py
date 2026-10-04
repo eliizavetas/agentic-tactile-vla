@@ -3,7 +3,7 @@ import pytest
 
 from agentic_tactile_vla import (ExecutionSupervisor, InteractionMode, State,
                                  SupervisorConfig, Verdict, variant_config)
-from sim import DT, SimHand, run
+from sim import DT, FakeDriver, SimHand, run
 
 FAR = 2.0   # contact position that is never reached
 
@@ -136,16 +136,77 @@ def test_retain_variant_never_releases():
     assert done.episode.verdict is Verdict.EMPTY and done.state is State.HOLD
 
 
-def test_language_cue_engages_compliant_before_closure():
+def test_compliant_branch_sequence():
     hand = SimHand(contact=[FAR] * 6)
-    sup = ExecutionSupervisor()
-    outs = run(sup, hand, 3.0, instruction="pick up the cup gently")
-    engaged = next(o for o in outs if o.event == "COMPLIANT_ENGAGED")
-    assert engaged.mode is InteractionMode.COMPLIANT and engaged.compliant_active
-    # the position path never issues the closing squeeze
-    assert max(o.hand_target[2] for o in outs) < 0.2
-    assert np.all(np.abs(engaged.compliant_command) <= 0.15 + 1e-12)
-    assert not any(o.state is State.ADJUST for o in outs)
+    driver = FakeDriver(delay=1.0)
+    outs = run(ExecutionSupervisor(), hand, 16.0, instruction="pick up the cup gently",
+               driver=driver, t_open=4.0)
+    ev = events(outs)
+    assert ev[:4] == ["PREOPEN", "COMPLIANT_BEGIN", "COMPLIANT_HOLDING", "COMPLIANT_HANDBACK"]
+    assert "ARMED" not in ev and "ADJUST" not in ev      # runs instead of ARMED -> ADJUST
+    assert driver.calls == ["begin", "handback"]
+
+    pre = [o for o in outs if o.state is State.PREOPEN]
+    assert len(pre) * DT == pytest.approx(0.8, abs=DT)
+    assert all(o.body_gate == 1 and o.override and np.all(o.hand_target == 0) for o in pre)
+    assert pre[0].mode is InteractionMode.COMPLIANT and pre[0].authority_transition
+    wait = [o for o in outs if o.state is State.COMPLIANT_WAIT]
+    assert wait and all(o.body_gate == 1 and o.override for o in wait)
+    hold = [o for o in outs if o.state is State.COMPLIANT_HOLD]
+    assert all(o.body_gate == 0 and o.override and o.compliant_active for o in hold)
+    assert len(hold) * DT >= 8.0                          # minimum hold before handback
+    # the position path never issues a closing squeeze
+    assert max(o.hand_target[2] for o in outs if o.override) == 0.0
+    done = next(o for o in outs if o.event == "COMPLIANT_HANDBACK")
+    assert done.state is State.IDLE and done.authority_transition and not done.override
+
+
+def test_compliant_only_while_hand_is_still_open():
+    hand = SimHand(contact=[FAR] * 6, q0=0.5)             # already closed past 0.45
+    driver = FakeDriver()
+    outs = run(ExecutionSupervisor(), hand, 3.0, instruction="pick up the cup gently",
+               driver=driver, open_level=0.5, closed_level=0.8)
+    ev = events(outs)
+    assert "COMPLIANT_TOO_LATE" in ev and "PREOPEN" not in ev and driver.calls == []
+
+
+def test_compliant_driver_failure_returns_hand():
+    hand = SimHand(contact=[FAR] * 6)
+    driver = FakeDriver(delay=0.5, fail=True)
+    outs = run(ExecutionSupervisor(), hand, 4.0, instruction="fragile, pick it up",
+               driver=driver)
+    failed = next(o for o in outs if o.event == "COMPLIANT_FAILED")
+    assert failed.state is State.IDLE and not failed.override and failed.body_gate == 0
+    assert not any(o.state is State.ADJUST for o in outs)   # blocked until the hand reopens
+
+
+def test_compliant_without_driver_keeps_hand_open():
+    hand = SimHand(contact=[FAR] * 6)
+    outs = run(ExecutionSupervisor(), hand, 3.0, instruction="pick up the cup gently")
+    assert "COMPLIANT_UNAVAILABLE" in events(outs)
+    assert max(o.hand_target[2] for o in outs if o.override) == 0.0
+
+
+def test_stale_hand_state_is_not_acted_on():
+    hand = SimHand(contact=[FAR] * 6)
+    outs = run(ExecutionSupervisor(), hand, 3.0, state_age=1.0)
+    assert events(outs) == ["STALE_STATE"]
+    assert all(o.state is State.IDLE and not o.override for o in outs)
+    # fresh state: the same run arms and corrects
+    hand = SimHand(contact=[FAR] * 6)
+    assert "ADJUST" in events(run(ExecutionSupervisor(), hand, 3.0, state_age=0.01))
+
+
+def test_freshness_gate_is_bypassed_in_compliant_states():
+    hand = SimHand(contact=[FAR] * 6)
+    driver = FakeDriver(delay=1.0)
+    # the hand state goes stale once the hand server is stopped (after PREOPEN)
+    age = lambda t: 0.01 if t < 1.0 else t
+    outs = run(ExecutionSupervisor(), hand, 16.0, instruction="pick up the cup gently",
+               driver=driver, state_age=age, t_open=4.0)
+    ev = events(outs)
+    assert "COMPLIANT_HOLDING" in ev and "COMPLIANT_HANDBACK" in ev
+    assert ev.index("COMPLIANT_HANDBACK") < len(ev)
 
 
 def test_missing_chunk_keeps_last_target():
