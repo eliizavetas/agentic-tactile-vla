@@ -1,7 +1,15 @@
 # AgenticTactileVLA
 
-Contact-guided execution-time supervision for a fixed vision-language-action
-(VLA) policy on a humanoid robot with a dexterous hand.
+An execution-time supervisor that lets a fixed vision-language-action (VLA)
+policy finish its grasps on a humanoid hand, using only finger positions and
+motor effort.
+
+<p align="center">
+  <img src="docs/media/supervisor_cube.gif" width="360"
+       alt="Humanoid robot grasps an orange cube with its left hand, carries it across the table and places it down">
+  <br>
+  <em>Supervised pick-and-place of the cube, an object held out from VLA training. Real time, trimmed to 8 s.</em>
+</p>
 
 > **Status of this code.** `src/` is a reimplementation from the paper
 > specification. It was assembled without the deployed supervisor code, which
@@ -30,7 +38,7 @@ sensors and no retraining of the policy.
 Platform: Unitree G1 humanoid, BrainCo Revo2 hand, GR00T-N1.6-3B policy,
 GEAR-SONIC whole-body controller.
 
-## 2. Headline results
+## 2. Results
 
 All numbers in this section are quoted from the paper (`paper/`). They were
 obtained with the deployed system, not with the code in this repository.
@@ -46,6 +54,42 @@ Five held-out objects, 15 matched trials each, shared execution budget.
 The supervisor beats the base VLA (Holm-corrected p = 0.001) and unconditional
 close-to-stall control (p = 0.045). Close-to-stall alone does not significantly
 beat the base VLA (p = 0.077).
+
+Same object, same start, with and without supervision (thermos lid, held out):
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="docs/media/base_vla_thermos_lid.gif" width="300"
+           alt="Base VLA closes on a metal thermos lid, lifts it and the lid falls back onto the table">
+      <br><em>Base VLA: the lid is lifted and dropped. 0.5x speed.</em>
+    </td>
+    <td align="center">
+      <img src="docs/media/supervisor_thermos_lid.gif" width="300"
+           alt="With the supervisor the robot grasps the thermos lid, carries it and places it upright">
+      <br><em>VLA + supervisor: the lid is carried and placed. Real time.</em>
+    </td>
+  </tr>
+</table>
+
+Another held-out object, and a training object for comparison:
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="docs/media/supervisor_soy_sauce_bottle.gif" width="300"
+           alt="With the supervisor the robot picks up a small soy sauce bottle, carries it and releases it on the table">
+      <br><em>Soy sauce bottle (held out), with the supervisor. Real time, trimmed to 8 s.</em>
+    </td>
+    <td align="center">
+      <img src="docs/media/supervisor_toy_training_object.gif" width="300"
+           alt="With the supervisor the robot grasps an orange toy figurine and moves it across the table">
+      <br><em>Toy (training object), with the supervisor. Real time, trimmed to 8 s.</em>
+    </td>
+  </tr>
+</table>
+
+The clips are single illustrative runs. The numbers come from the tables.
 
 Component ablation, 100 matched blocks:
 
@@ -63,38 +107,41 @@ S-position and S-retain (p = 0.378 and 0.235). Selectivity cuts correction
 episodes by 65.7% with no detected change in completion (p = 0.804); that is
 absence of a detected difference, not shown equivalence.
 
-Thin-walled cup, five trials per condition:
-
-| Mode selected by | Intact | Damaged | Compliant active |
-|---|---|---|---|
-| No selection (position control) | 0 | 5 | 0/5 |
-| Instruction cue | 5 | 0 | 5/5 |
-| VLM from image | 4 | 1 | 4/5 |
-| Instruction + VLM | 5 | 0 | 5/5 |
-| Always compliant | 5 | 0 | 5/5 |
-
-Always-compliant control does equally well, so this shows that routing works,
-not that routing is better. The cup is a training object.
-
 ## 3. How it works
 
+<p align="center">
+  <img src="docs/media/fig2_architecture.png" width="900"
+       alt="System architecture: the VLA sends body tokens to the whole-body controller and hand targets to the hand driver; the execution agent evaluates the grasp, freezes and corrects it or returns control to the VLA; language cues and a VLM select the interaction mode">
+  <br>
+  <em>System architecture (Fig. 2 of the paper).</em>
+</p>
+
 ```mermaid
-flowchart TD
-    P[Fixed VLA policy<br/>body tokens + hand targets] --> S{Supervisor state}
-    S -->|IDLE / ARMED| N[Hand follows the policy target<br/>position support accumulates]
-    N --> A{Closure finished:<br/>at least 3 fingers supported?}
-    A -->|yes| T[Stay transparent<br/>policy keeps control]
-    A -->|no| ADJ[ADJUST: pause body reference<br/>advance each unsupported finger<br/>until support or travel limit]
-    ADJ --> V{Verdict from support count}
-    V -->|FORMED, 3 or more| H[HOLD: keep corrected grasp<br/>resume body reference]
-    V -->|EMPTY or CROOKED| R[Release the hand override<br/>policy may reopen and retry]
-    H -->|policy reopens the hand| P
-    R --> P
-    T --> P
-    M[Mode selection before closure:<br/>language cue, else VLM] -.->|compliant| C[Current-limited controller<br/>closure and holding]
+stateDiagram-v2
+    [*] --> IDLE
+    IDLE --> ARMED: closure upcoming in the action chunk
+    ARMED --> IDLE: 3 or more fingers supported (transparent)
+    ARMED --> ADJUST: fewer than 3 supported
+    ADJUST --> HOLD: FORMED, correction kept
+    ADJUST --> IDLE: EMPTY or CROOKED, override released
+    HOLD --> IDLE: policy reopens the hand
+
+    IDLE --> PREOPEN: closure upcoming, mode compliant, hand still open
+    PREOPEN --> COMPLIANT_WAIT: hand open for 0.8 s
+    COMPLIANT_WAIT --> COMPLIANT_HOLD: hand service holds the object
+    COMPLIANT_WAIT --> IDLE: handover failed
+    COMPLIANT_HOLD --> IDLE: held 8 s and policy reopens
 ```
 
-**State machine.** Four states. `b_t = 1` pauses progression of the body
+<p align="center">
+  <img src="docs/media/fig1_concept.png" width="760"
+       alt="Concept figure: the fixed VLA predicts the approach and hand targets, the execution agent adapts finger closure at contact; without the agent fingers miss contact and the object is dropped">
+  <br>
+  <em>From VLA prediction to execution-time physical adaptation (Fig. 1 of the paper).</em>
+</p>
+
+**State machine.** Four states on the position path, plus the compliant branch
+described under "Fragile objects". `b_t = 1` pauses progression of the body
 reference; whole-body stabilization stays active.
 
 | State | `b_t` | Hand override | Exit |
@@ -134,7 +181,62 @@ outputs only a mode label.
 Details: [docs/architecture.md](docs/architecture.md),
 [docs/detector.md](docs/detector.md).
 
-## 4. Hardware and software requirements
+## 4. Fragile objects
+
+A fragile object can be damaged before any resistance is detectable, so the
+correction above comes too late for it. For these objects the supervisor picks
+the control mode before the hand closes: a handling cue in the instruction or
+the VLM selects compliant control, and the closure is executed by a
+current-limited controller instead of position control.
+
+Thin-walled cup, five trials per condition:
+
+| Mode selected by | Intact | Damaged | Compliant active |
+|---|---|---|---|
+| No selection (position control) | 0 | 5 | 0/5 |
+| Instruction cue | 5 | 0 | 5/5 |
+| VLM from image | 4 | 1 | 4/5 |
+| Instruction + VLM | 5 | 0 | 5/5 |
+| Always compliant | 5 | 0 | 5/5 |
+
+Always-compliant control does equally well, so this shows that routing works,
+not that routing is better. The cup is a training object.
+
+<p align="center">
+  <img src="docs/media/fig4_cup_outcomes.png" width="640"
+       alt="Two close-ups of the robot hand holding a green thin-walled cup: crushed under position control, intact under compliant control">
+  <br>
+  <em>Cup outcomes: damage under position control, intact under compliant control (Fig. 4 of the paper).</em>
+</p>
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="docs/media/cup_position_control.gif" width="300"
+           alt="Under position control the robot closes on a green thin-walled cup, crushes it and leaves it crumpled on the table">
+      <br><em>Position control: the cup is crushed. Real time.</em>
+    </td>
+    <td align="center">
+      <img src="docs/media/cup_compliant.gif" width="300"
+           alt="Under compliant control the robot hand closes on the green cup and holds it without deforming it">
+      <br><em>Compliant mode: the cup stays intact. Speed-ramped, trimmed to 8 s.</em>
+    </td>
+  </tr>
+</table>
+
+**Timing matters.** The compliant branch starts only while the hand is still
+open (measured mean flexion below 0.45). The hand is first opened fully, then
+handed to the compliant hand service, which closes and holds. If the compliant
+decision arrives after the hand has already closed, the handover is not started
+and the grasp stays on the position path; the log shows `COMPLIANT_TOO_LATE`.
+This is the failure seen in the one damaged VLM-only trial of the table above,
+where compliant mode was selected after closure had begun and the damage was
+not prevented.
+
+Compliant control covers closure and holding only, not autonomous transport.
+Details of the handover: [docs/deployment.md](docs/deployment.md).
+
+## 5. Hardware and software requirements
 
 | Item | Requirement |
 |---|---|
@@ -153,7 +255,7 @@ Details: [docs/architecture.md](docs/architecture.md),
 The supervisor logic, the tests and the analysis scripts run on any computer.
 Only the bridge needs the robot.
 
-## 5. Installation
+## 6. Installation
 
 ```bash
 git clone <repository url>
@@ -172,7 +274,7 @@ cp .env.example .env    # fill in the addresses, then: set -a; source .env; set 
 
 On the GPU server, for the VLM service: `pip install -e ".[vlm]"`.
 
-## 6. Running it
+## 7. Running it
 
 Start the processes in this order. Full details and troubleshooting are in
 [docs/deployment.md](docs/deployment.md).
@@ -226,7 +328,7 @@ HAND_ENABLE=1 SLEW_ENABLE=1 python scripts/run_agent.py --hand left \
 Then press `k`, `i`, `p` in the keyboard publisher. Use `--no-agent` for the
 base VLA and `--observe` to log supervisor decisions without acting on them.
 
-## 7. Configuration
+## 8. Configuration
 
 All thresholds live in [`src/agentic_tactile_vla/config.py`](src/agentic_tactile_vla/config.py).
 
@@ -251,6 +353,8 @@ All thresholds live in [`src/agentic_tactile_vla/config.py`](src/agentic_tactile
 | `CompliantConfig.kp`, `kd` | K_p, K_d | 5.0, 0.05 | controller-interface gains, not stiffness or damping |
 | `CompliantConfig.period` | | 0.02 s | compliant loop period |
 | `CompliantConfig.i_max` | I_max | 0.15 | normalized command limit; raw 150 → 0.15, raw 200 → 0.20; not calibrated current |
+| `CompliantConfig.preopen`, `early_max_flexion`, `min_hold` | | 0.8 s, 0.45, 8.0 s | compliant handover: pre-open time, flexion level below which the branch may start, minimum hold; not reported in the paper |
+| `max_state_age` | | 0.5 s | hand state older than this is not acted on outside the compliant branch; not reported in the paper |
 | `CompliantConfig.velocity_alpha` | | 0.3 | velocity smoothing factor; not reported in the paper |
 | `CompliantConfig.target` | q_d | per channel | predefined grasp configuration; not reported in the paper |
 | `ModeConfig.handling_cues` | | gently, carefully, fragile | words that select compliant mode |
@@ -259,7 +363,7 @@ Detector thresholds were selected from 40 calibration closures on the five
 training objects and frozen before evaluation. Do not tune them on evaluation
 objects.
 
-## 8. Repository layout
+## 9. Repository layout
 
 ```
 agentic-tactile-vla/
@@ -274,10 +378,11 @@ agentic-tactile-vla/
 ├── data/raw/                  August development logs, unchanged
 ├── data/processed/            per-attempt and summary tables from the same sessions
 ├── docs/                      architecture, detector, deployment, experiments, data formats
+│   └── media/                 paper figures and short clip previews used in this README
 └── paper/                     paper PDF and LaTeX source
 ```
 
-## 9. Reproducing the analysis
+## 10. Reproducing the analysis
 
 Per-trial records for the evaluation tables are not part of this release.
 `data/raw/` contains August development logs recorded with an earlier version
@@ -298,7 +403,7 @@ What can be run:
 How each table was produced is described in
 [docs/experiments.md](docs/experiments.md).
 
-## 10. Limitations
+## 11. Limitations
 
 * **Proprioception is not calibrated force.** Positions and motor effort are
   device-specific signals. Thresholds do not transfer to another hand without
@@ -325,7 +430,7 @@ How each table was produced is described in
   own hand before it starts, and it contains safety logic beyond equation (9),
   such as a closing-speed cap, that the paper does not describe.
 
-## 11. Citation
+## 12. Citation
 
 ```bibtex
 @misc{semenyakina2026agentictactilevla,
