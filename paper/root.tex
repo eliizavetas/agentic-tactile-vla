@@ -27,19 +27,10 @@
 \newcommand{\crooked}{\textsc{Crooked}}
 \newcommand{\emptygrasp}{\textsc{Empty}}
 \newcommand{\state}[1]{\textsc{#1}}
-\newcommand{\ind}{\mathbb{I}}
-\newcommand{\sat}{\operatorname{sat}}
-\newcommand{\phfig}[2]{%
-  \fbox{\parbox[c][#1][c]{\dimexpr\columnwidth-2\fboxsep-2\fboxrule\relax}{%
-  \centering\footnotesize\textbf{[PLACEHOLDER]}\\[2pt]#2}}}
-\newcommand{\phfigwide}[2]{%
-  \fbox{\parbox[c][#1][c]{\dimexpr\textwidth-2\fboxsep-2\fboxrule\relax}{%
-  \centering\footnotesize\textbf{[PLACEHOLDER]}\\[2pt]#2}}}
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
 \definecolor{bodyblue}{RGB}{34,79,121}
 \definecolor{contactteal}{RGB}{19,112,110}
 \definecolor{modeorange}{RGB}{151,85,24}
-\newcommand{\obsmark}{\textsf{O}}
 \pdfinfo{
 /Title (AgenticTactileVLA: Contact-Guided Execution-Time Supervision for Generalizable Dexterous Manipulation without VLA Retraining)
 /Author (Elizaveta Semenyakina, Ivan Snegirev, Mikhail Kiselev, Miguel Altamirano Cabrera, Artem Lykov, Hajira Amjad, Dzmitry Tsetserukou)
@@ -790,24 +781,6 @@ perturbed. The same five objects are evaluated under nominal poses, horizontal
 translations within 20\,mm, and yaw changes within $15^\circ$, with 50 matched
 trials per regime and condition.
 
-% \begin{table}[H]
-% \caption{Task completion under initial-pose perturbations.}
-% \label{tab:pose_stress}
-% \centering\small
-% \setlength{\tabcolsep}{3pt}
-% \begin{tabularx}{\columnwidth}{Yccc}
-% \toprule
-% Regime & VLA & VLA + stall & Supervisor\\
-% \midrule
-% Nominal      & 32/50 & 37/50 & 43/50\\
-% Translation  & 25/50 & 32/50 & 39/50\\
-% Yaw          & 23/50 & 30/50 & 37/50\\
-% \midrule
-% Pooled       & 80/150 & 99/150 & 119/150\\
-% \bottomrule
-% \end{tabularx}
-% \end{table}
-
 Performance decreases under perturbation for all methods, but the supervisor
 remains the strongest condition in every regime. Its gain over the base VLA
 is 22, 28, and 28 percentage points for nominal, translated, and rotated
@@ -929,25 +902,6 @@ A thin-walled cup is evaluated under position control, instruction-based
 routing, VLM-based routing, combined instruction--VLM routing, and
 always-compliant control (Table \ref{tab:modes}).
 
-% \begin{table}[H]
-% \caption{Thin-walled-cup integrity and compliant-mode activation.}
-% \label{tab:modes}
-% \centering\small
-% \setlength{\tabcolsep}{3pt}
-% \begin{tabularx}{\columnwidth}{Ycccc}
-% \toprule
-% Mode selected by & Trials & Intact & Damaged & Compliant active\\
-% \midrule
-% No selection        & 5 & 0 & 5 & 0/5\\
-% Instruction cue     & 5 & 5 & 0 & 5/5\\
-% VLM from image      & 5 & 4 & 1 & 4/5\\
-% Instruction + VLM   & 5 & 5 & 0 & 5/5\\
-% Always compliant    & 5 & 5 & 0 & 5/5\\
-% \bottomrule
-% \end{tabularx}
-% \vspace{-4mm}
-% \end{table}
-
 Nominal position control damages all five cups, whereas instruction-based and
 combined routing preserve 5/5. VLM-only routing preserves 4/5; in the remaining
 trial, the correct compliant mode is selected after closure begins
@@ -972,16 +926,6 @@ Always compliant    & 5 & 5 & 0 & 5/5\\
 \end{tabularx}
 \vspace{-4mm}
 \end{table}
-
-% \begin{figure}[H]
-% \centering
-% \includegraphics[width=0.7\columnwidth]{cup_exp_1}
-% \caption{Representative thin-walled-cup outcomes.
-% (a) Damage under nominal position control.
-% (b) Preserved integrity under compliant control.}
-% \label{fig:cup_outcomes}
-% \vspace{-2.5mm}
-% \end{figure}
 
 Always-compliant control also preserves 5/5 cups, so the experiment
 demonstrates successful contextual routing rather than superiority over
