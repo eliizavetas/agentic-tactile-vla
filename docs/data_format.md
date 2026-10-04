@@ -140,6 +140,10 @@ Empty cells mean the quantity was not recorded. They are not zeros.
 | `<channel>_latched`, `<channel>_source` | support latch and the test that set it, `stall` or `effort` |
 | `<channel>_exhausted`, `<channel>_q` | travel exhausted, and measured position at the verdict |
 
+`bridge_<hand>_<timestamp>.log`, written by `scripts/run_agent.py`: the
+console output of the bridge and the supervisor. All three files of a session
+share the same `<timestamp>`.
+
 `ramp_<hand>_<timestamp>.csv`, one row per tick inside ADJUST:
 
 | Column | Meaning |

@@ -437,6 +437,9 @@ HAND_ENABLE=1 SLEW_ENABLE=1 python scripts/run_agent.py --hand left \
   --embodiment-tag NEW_EMBODIMENT --prompt "pick up the object and place it down"
 ```
 
+The console output is saved to `agent_logs/bridge_left_<time>.log`, next to the
+supervisor's `verdicts_*` and `ramp_*` files of the same session.
+
 * `HAND_ENABLE=1` sends hand commands to the hand; without it they are only
   printed (dry run).
 * `SLEW_ENABLE=1` caps the per-tick change of the body token and of the nominal

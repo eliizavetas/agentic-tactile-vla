@@ -39,10 +39,10 @@ Then start the bridge:
 
 ```bash
 HAND_ENABLE=1 SLEW_ENABLE=1 python scripts/run_agent.py --hand left \
-  --embodiment-tag NEW_EMBODIMENT --prompt "pick up the object and place it down" \
-  2>&1 | tee bridge.log
+  --embodiment-tag NEW_EMBODIMENT --prompt "pick up the object and place it down"
 ```
 
+- [ ] `[session] console log: agent_logs/bridge_left_<time>.log`
 - [ ] `PolicyServer is reachable`
 - [ ] `[BrainCo] hand state reader ready (6 DOF)`: the hand service in T4 is publishing
 - [ ] banner shows the agent enabled and the monitored channels:
@@ -52,7 +52,7 @@ The prompt must be the checkpoint's training prompt, character for character.
 The one above is from the recorded logs.
 
 To follow supervisor events in a second robot terminal:
-`tail -f bridge.log | grep --line-buffered "\[agent\]"`
+`tail -f "$(ls -t agent_logs/bridge_*.log | head -1)" | grep --line-buffered "\[agent\]"`
 
 Optional:
 
@@ -113,7 +113,7 @@ across conditions.
 |---|---|---|
 | `agent_logs/verdicts_<hand>_<time>.csv` | T7 (`$AGENT_LOG_DIR`) | one row per assessed closure: intervention, support count, verdict, per-finger latches, mode |
 | `agent_logs/ramp_<hand>_<time>.csv` | T7 | one row per control tick inside ADJUST: reference, position, effort deviation, eligibility, latch |
-| `bridge.log` | T7, through `tee` | console output of the bridge and the supervisor |
+| `agent_logs/bridge_<hand>_<time>.log` | T7 | console output of the bridge and the supervisor |
 | `/tmp/impedance_grasp.log`, `drivers/brainco_compliant/data_out/grasp_service/` | compliant handover | service console and per-grasp records |
 
 `ticks_*` and `marks_*` in `data/raw/` were written in August by a chunk probe
@@ -124,10 +124,10 @@ Copy logs off the robot from the laptop:
 
 ```bash
 scp -r <robot user>@<robot address>:<path to this repository>/agent_logs ./agent_logs_$(date +%Y%m%d)
-scp <robot user>@<robot address>:<path to this repository>/bridge.log ./bridge_$(date +%Y%m%d_%H%M).log
 ```
 
-Copy after every session; restarting T7 with `tee bridge.log` overwrites it.
+All three files of one session share the same `<time>`. Restarting T7 starts
+a new set; earlier sessions are never overwritten.
 
 ## 6. Stop safely
 
@@ -159,4 +159,4 @@ Copy after every session; restarting T7 with `tee bridge.log` overwrites it.
 | hand completely dead, both hands | both hand processes stopped: the hand server serves both hands | restart T4; check no `brainco_grasp_service` is left running |
 | arm moves but hand does not; `[BrainCo] DRY-RUN` lines | `HAND_ENABLE` not set | restart T7 with `HAND_ENABLE=1` |
 | no `[agent]` lines | supervisor disabled (`--no-agent`) or no hand state | check the T7 flags and T4 |
-| `[agent] step failed, disabling` | the supervisor raised an exception | T7 continues as base VLA; restart T7 and check `bridge.log` |
+| `[agent] step failed, disabling` | the supervisor raised an exception | T7 continues as base VLA; restart T7 and check the session's `bridge_*.log` |

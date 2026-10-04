@@ -97,7 +97,7 @@ source ~/GR00T-WholeBodyControl/.venv_data_collection/bin/activate
 pip install -e ".[robot]"          # once
 HAND_ENABLE=1 SLEW_ENABLE=1 python scripts/run_agent.py \
   --hand left --embodiment-tag NEW_EMBODIMENT \
-  --prompt "pick up the object and place it down" 2>&1 | tee bridge.log
+  --prompt "pick up the object and place it down"
 ```
 
 `unitree_sdk2py` must be importable in this environment (add its checkout to
@@ -116,7 +116,7 @@ python scripts/run_agent.py --handling-cue gently ...   # cue for the interactio
 Supervisor events can be followed with
 
 ```bash
-tail -f bridge.log | grep --line-buffered "\[agent\]"
+tail -f "$(ls -t agent_logs/bridge_*.log | head -1)" | grep --line-buffered "\[agent\]"
 ```
 
 ### 8. Start moving
@@ -345,7 +345,7 @@ a setpoint ramp; see `drivers/brainco_compliant/README.md`.
 |---|---|
 | `$AGENT_LOG_DIR/verdicts_<hand>_<time>.csv` | one row per assessed closure |
 | `$AGENT_LOG_DIR/ramp_<hand>_<time>.csv` | one row per tick inside ADJUST |
-| `bridge.log` | console output of the bridge and the supervisor |
+| `$AGENT_LOG_DIR/bridge_<hand>_<time>.log` | console output of the bridge and the supervisor; same `<time>` as the CSV files of the session |
 
 Formats: `docs/data_format.md`.
 

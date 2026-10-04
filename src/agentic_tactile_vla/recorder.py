@@ -6,6 +6,9 @@ Two files are written per run, in the directory given by AGENT_LOG_DIR:
     verdicts_<hand>_<timestamp>.csv   one row per assessed closure
     ramp_<hand>_<timestamp>.csv       one row per control tick inside ADJUST
 
+When scripts/run_agent.py starts the run, <timestamp> is the session stamp it
+also uses for bridge_<hand>_<timestamp>.log (AGENT_SESSION_STAMP).
+
 The schema is described in docs/data_format.md. It differs from the August
 development logs under data/raw/, which were written by an earlier version of
 the supervisor.
@@ -26,7 +29,7 @@ class Recorder:
     def __init__(self, hand: str = "left", directory: Optional[str] = None) -> None:
         directory = directory or os.environ.get("AGENT_LOG_DIR", "agent_logs")
         os.makedirs(directory, exist_ok=True)
-        stamp = time.strftime("%Y%m%d_%H%M%S")
+        stamp = os.environ.get("AGENT_SESSION_STAMP") or time.strftime("%Y%m%d_%H%M%S")
         self.verdict_path = os.path.join(directory, f"verdicts_{hand}_{stamp}.csv")
         self.ramp_path = os.path.join(directory, f"ramp_{hand}_{stamp}.csv")
         self._verdict_file = open(self.verdict_path, "w", newline="")
