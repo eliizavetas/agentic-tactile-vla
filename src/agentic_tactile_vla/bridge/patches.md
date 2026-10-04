@@ -42,11 +42,11 @@ behaves as the base VLA.
    computed from an observation taken before the transition is discarded, and a
    new inference is triggered. While the new chunk is pending the supervisor
    keeps stepping on the hand and no motion token is sent.
-5. Compliant branch: the supervisor returns a current-limited command
-   (`compliant_command`). It is forwarded to `compliant_sink` when a
-   current-mode hand driver is attached. No such driver ships with this
-   repository, because the DDS hand interface is position-mode only. Without a
-   sink the hand is held at the position it had when the branch engaged.
+5. Compliant branch: with `COMPLIANT_DRIVER=1` the bridge loads the client in
+   `drivers/brainco_compliant/impedance_grasp.py`. When the branch engages it
+   starts a compliant grasp on the hand service, and when the branch ends (the
+   policy reopens the hand, or key `i`) it returns the hand. Without the
+   driver the hand is held at the position it had when the branch engaged.
 6. Key `i` (return to the initial pose) resets the supervisor.
 
 Environment variables read by the bridge:
@@ -64,5 +64,8 @@ Environment variables read by the bridge:
 | `AGENT_HANDLING_CUE` | unset | handling text given to the interaction parser only, so the policy prompt stays identical across conditions |
 | `AGENT_LOG_DIR` | `agent_logs` | directory for verdict and ramp CSV files |
 | `VLM_ENABLE`, `VLM_HOST`, `VLM_PORT` | `0`, `localhost`, `5599` | mode-selection VLM service |
+| `COMPLIANT_DRIVER` | `0` | `1` hands compliant grasps to the current-mode hand service |
+| `COMPLIANT_PROFILE`, `COMPLIANT_SHAPE` | `gentle`, `sphere` | profile (raw limit 150) and grasp configuration requested from the service |
+| `COMPLIANT_DRIVER_DIR` | `drivers/brainco_compliant` | location of the service client |
 | `SLEW_ENABLE`, `SLEW_MAX`, `SLEW_HAND` | `0`, `0.05`, `0.03` | slew limits |
 | `RIGHT_THUMB_LOCK` | `0` | right thumb workaround |

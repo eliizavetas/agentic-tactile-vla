@@ -3,12 +3,12 @@
 Contact-guided execution-time supervision for a fixed vision-language-action
 (VLA) policy on a humanoid robot with a dexterous hand.
 
-> **Status of this code.** `src/` implements the method as specified in the
-> paper. The deployed code used for the experiments was not available when this
-> repository was assembled; this is a reimplementation from the specification
-> and has not been re-run on hardware. The robot bridge
-> (`src/agentic_tactile_vla/bridge/`) is adapted from the bridge that ran on
-> the robot; its connection to the reimplemented supervisor is new and equally
+> **Status of this code.** `src/` is a reimplementation from the paper
+> specification. It was assembled without the deployed supervisor code, which
+> was not available, and it has not been re-run on hardware. The robot bridge
+> (`src/agentic_tactile_vla/bridge/`) and the compliant hand service
+> (`drivers/brainco_compliant/`) are adapted from files recovered from the
+> robot; their connection to the reimplemented supervisor is new and equally
 > untested on hardware.
 
 ## 1. What this is
@@ -146,6 +146,7 @@ Details: [docs/architecture.md](docs/architecture.md),
 | Python | 3.10 or newer |
 | Core package | `numpy` |
 | Robot side | `pyzmq`, `msgpack`, `tyro`, `opencv-python`, plus `gear_sonic` and `unitree_sdk2py` from their own repositories |
+| Compliant hand service | C++17 compiler, CMake, the BrainCo Stark SDK |
 | VLM service | `torch`, `transformers`, `accelerate`, `pillow`, `pyzmq` |
 | Analysis | `pandas`, `matplotlib` |
 
@@ -245,7 +246,7 @@ All thresholds live in [`src/agentic_tactile_vla/config.py`](src/agentic_tactile
 | `preload` | | 0.02 | added to the measured position when support latches |
 | `min_adjust`, `max_adjust` | | 0.6 s, 4.0 s | bounds on the adjustment phase |
 | `reopen_delta`, `reopen_hold` | | 0.05, 0.12 s | drop in mean flexion that releases a hold and allows rearming |
-| `travel_limit` | permitted travel limit | 1.0 per channel | upper bound of each finger reference; not reported in the paper, set it for your hand |
+| `travel_limit` | permitted travel limit | 0.98 on flexion channels | upper bound of each finger reference; not reported in the paper, taken from the teleoperation closed-hand preset |
 | `selective`, `use_effort`, `verdict_release`, `use_verdict` | S / U variants | all true | ablation switches |
 | `CompliantConfig.kp`, `kd` | K_p, K_d | 5.0, 0.05 | controller-interface gains, not stiffness or damping |
 | `CompliantConfig.period` | | 0.02 s | compliant loop period |
@@ -267,6 +268,7 @@ agentic-tactile-vla/
 ├── scripts/                   entry points: robot launcher, keyboard publisher, VLM service, log replay
 │   └── figures/               figure script that reads the recorded logs
 ├── analysis/                  statistics from the published counts, eq. (8) on recorded flags, retention audit
+├── drivers/brainco_compliant/ current-mode hand service for the compliant branch (C++), gate diagnostics, clients
 ├── configs/                   GR00T modality config used for fine-tuning
 ├── tests/                     unit tests on a simulated finger model
 ├── data/raw/                  August development logs, unchanged
@@ -319,8 +321,9 @@ How each table was produced is described in
   ablation, and no difference between selective and always-on supervision was
   detected, which is not proof of equivalence.
 * **This code has not been run on the robot.** See the status note at the top.
-  No current-mode hand driver is included, so the compliant branch needs one
-  to be attached before it can act on hardware.
+  The compliant hand service in `drivers/` needs gate files recorded on your
+  own hand before it starts, and it contains safety logic beyond equation (9),
+  such as a closing-speed cap, that the paper does not describe.
 
 ## 11. Citation
 

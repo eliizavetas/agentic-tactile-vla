@@ -15,6 +15,11 @@
 Compliant mode is activated before closure, so the position path never applies
 an initial high-effort squeeze. The controller supports compliant closure and
 holding. It does not support autonomous transport.
+
+This module is the reference implementation of eq. (9) and is what the unit
+tests exercise. On hardware the same law runs inside the hand service under
+drivers/brainco_compliant/, which adds a closing-speed cap, a setpoint ramp and
+watchdogs that the paper does not describe.
 """
 
 from __future__ import annotations

@@ -20,7 +20,7 @@ Section numbers refer to the paper in `paper/`.
 | Finger corrector | per-finger advance, preload and timing bounds | `correction.py` |
 | Verdict | FORMED, EMPTY or CROOKED from the support count | `verdict.py` |
 | Mode selector | nominal or compliant control from language cues and a VLM | `modes.py`, `vlm_client.py`, `scripts/vlm_service.py` |
-| Compliant controller | current-limited PD law | `compliant.py` |
+| Compliant controller | current-limited PD law | `compliant.py` (reference), `drivers/brainco_compliant/` (hardware) |
 | Bridge | connects all of the above on the robot | `bridge/vla_bridge.py` |
 
 The policy is never retrained by this project and is not modified at run time.
@@ -176,6 +176,13 @@ not physical stiffness or damping. Raw command limits of 150 and 200 map to
 calibrated motor current. The controller covers compliant closure and holding,
 not autonomous transport.
 
+On hardware this law runs inside the hand service in
+`drivers/brainco_compliant/`, which owns the hand's serial port for the
+duration of a compliant grasp. That service adds a closing-speed cap, a
+setpoint ramp and watchdogs around the law; these are implementation details
+not stated in the paper. `compliant.py` implements equation (9) alone and is
+used by the tests.
+
 ## Points the paper leaves open
 
 The paper fixes the rules above. A few details needed for a running system are
@@ -187,8 +194,9 @@ reported parameters.
 | Buffer for closure detection | Arming looks ahead in the chunk over 0.25 s, with the issued targets as fallback. The terminal phase uses the targets issued over the trailing 0.12 s. |
 | Pairing of command and measurement | The detector pairs the position measured now with the reference issued on the previous tick. |
 | ARMED without an assessment | If the policy reopens before the terminal phase, or the announced closure disappears from the chunk, the supervisor returns to IDLE. |
-| Numeric travel limits | Not reported. `travel_limit` defaults to 1.0 per channel and must be set for the hand in use. |
+| Numeric travel limits | Not reported. `travel_limit` defaults to 0.98 on the flexion channels, the value of the teleoperation closed-hand preset. |
 | Velocity smoothing factor | Not reported. `velocity_alpha = 0.3`. |
 | Compliant grasp configuration | Not reported. `CompliantConfig.target` holds a default to be set per grasp. |
 | Compliant branch in the state table | Realized as HOLD with the compliant controller engaged at arming; left when the policy reopens the hand. |
+| Safety logic of the compliant hand service | Closing-speed cap, setpoint ramp, watchdogs and start gates; see `drivers/brainco_compliant/README.md`. |
 | Ablation variants | U-stall, U-full, S-position, S-retain and S-full are switches in `config.py`, written from their description in Sec. IV-C. |

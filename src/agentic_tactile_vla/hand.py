@@ -16,9 +16,9 @@ tau_est is used as the motor-effort proxy e. It is a device-specific indicator
 of interaction resistance. It is NOT calibrated force or torque, and its scale
 is only meaningful relative to a baseline taken on the same hand.
 
-This DDS interface is position-mode only. Current-mode commands for the
-compliant controller need a current-mode driver for the hand, which is not part
-of this repository; see `CurrentCommandSink` in compliant.py.
+This DDS interface is position-mode only. Compliant control runs in the
+current-mode hand service under drivers/brainco_compliant/, which takes over
+the hand's serial port for the duration of a compliant grasp.
 """
 
 from __future__ import annotations
@@ -173,7 +173,7 @@ class BraincoHand:
     def send_current(self, raw_command) -> None:
         raise NotImplementedError(
             "The rt/brainco DDS interface accepts position-mode commands only. "
-            "Compliant control needs a current-mode driver for the hand."
+            "Compliant control runs in the service under drivers/brainco_compliant/."
         )
 
 
