@@ -63,9 +63,11 @@ class SupervisorConfig:
     min_adjust: float = 0.6        # ADJUST lasts at least this long [s]
     max_adjust: float = 4.0        # ... and at most this long [s]
     # Permitted travel limit per channel. The paper does not report numeric
-    # limits; the default is the upper end of the normalized range. Set
-    # hand-specific limits here before running on hardware.
-    travel_limit: Tuple[float, ...] = (1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
+    # limits. The flexion channels (0, 2, 3, 4, 5) use 0.98, taken from the
+    # teleoperation closed-hand preset [0.98, 0.90, 0.98, 0.98, 0.98, 0.98].
+    # Thumb opposition (channel 1) is never driven by the supervisor, so its
+    # entry is unused and left at the end of the normalized range.
+    travel_limit: Tuple[float, ...] = (0.98, 1.0, 0.98, 0.98, 0.98, 0.98)
 
     # --- re-entry blocking (Sec. III-D) ------------------------------------
     reopen_delta: float = 0.05     # decrease in mean flexion relative to terminal assessment
