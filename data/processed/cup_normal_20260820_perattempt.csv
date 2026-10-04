@@ -1,0 +1,6 @@
+attempt_key,condition,object,n,intact,approaches_ledger,grasped,placed,notes,agent_label,n_contacts,contact_fingers,why_channels,depth_mean,depth_spread,tau_peak_max,q_thumb,q_index,q_middle,q_ring,q_pinky,lead_in_s,robot_span_s,closure_events,n_verdicts,verdict_labels,adjust_ticks,ramp_travel,source_session
+cup|1,agent-NORMAL,cup,1,,,,,,CROOKED,1,index,index:+dur,0.735,,1.392,0.806,0.924,0.97,0.97,0.969,7.7,7.4,2,2,CROOKED|EMPTY,60,0.385,20260820_191528
+cup|2,agent-NORMAL,cup,2,,,,,,CROOKED,1,index,index:+dur,0.792,,1.29,0.796,0.812,0.969,0.97,0.969,7.7,7.6,2,2,CROOKED|CROOKED,60,0.176,20260820_191528
+cup|3,agent-NORMAL,cup,3,,,,,,EMPTY,0,,,,,2.445,0.803,0.925,0.941,0.952,0.938,8.5,8.0,2,2,EMPTY|EMPTY,60,0.157,20260820_191528
+cup|4,agent-NORMAL,cup,4,,,,,,FORMED,2,index+ring,index:+dur;ring:stall,0.605,0.271,1.065,0.801,0.761,0.968,0.47,0.938,7.5,0.0,1,1,FORMED,30,0.108,20260820_191528
+cup|5,agent-NORMAL,cup,5,,,,,,CROOKED,1,index,index:+dur,0.829,,1.94,0.721,0.718,0.719,0.72,0.718,1.4,13.6,3,3,CROOKED|CROOKED|EMPTY,81,-0.096,20260820_191528

@@ -1,0 +1,9 @@
+t,attempt,label,actual,n_contacts,depth_mean,depth_spread,tau_peak_max,repeat_of_previous,n_since_success,timed_out,thumb_contact,thumb_q,thumb_why,thumb_err,thumb_taupk,thumb_taudur,thumb_aux_contact,thumb_aux_q,thumb_aux_why,thumb_aux_err,thumb_aux_taupk,thumb_aux_taudur,index_contact,index_q,index_why,index_err,index_taupk,index_taudur,middle_contact,middle_q,middle_why,middle_err,middle_taupk,middle_taudur,ring_contact,ring_q,ring_why,ring_err,ring_taupk,ring_taudur,pinky_contact,pinky_q,pinky_why,pinky_err,pinky_taupk,pinky_taudur
+1786802613.283,1,FORMED,,4,0.657,0.285,1.233,0,0,0,,,,,,,,,,,,,1,0.482,tau,0.02,0.913,0.0,1,0.703,+dur,0.02,0.784,0.06,1,0.678,tau,0.02,1.233,0.02,1,0.767,tau,0.02,1.099,0.02
+1786802620.118,2,FORMED,,4,0.738,0.175,1.446,0,0,0,,,,,,,,,,,,,1,0.608,tau,0.02,1.043,0.04,1,0.78,tau+dur,0.02,1.196,0.06,1,0.783,tau+dur,0.02,1.296,0.06,1,0.783,tau,0.02,1.446,0.04
+1786802650.060,3,FORMED,,4,0.501,0.191,1.274,0,0,0,,,,,,,,,,,,,1,0.587,tau,0.02,1.015,0.02,1,0.447,tau,0.02,0.969,0.04,1,0.396,+stall,0.02,0.057,0.0,1,0.572,tau,0.02,1.274,0.0
+1786802661.756,4,FORMED,,4,0.607,0.29,1.23,0,0,0,,,,,,,,,,,,,1,0.446,tau,0.02,0.973,0.04,1,0.636,+dur,0.02,0.705,0.06,1,0.609,tau,0.02,0.917,0.0,1,0.736,tau,0.02,1.23,0.0
+1786802670.458,5,FORMED,,4,0.65,0.243,1.71,0,0,0,,,,,,,,,,,,,1,0.478,tau,0.02,1.341,0.0,1,0.703,tau+dur,0.02,1.71,0.061,1,0.7,tau+dur,0.02,1.129,0.061,1,0.721,tau,0.02,1.187,0.0
+1786802675.842,6,FORMED,,4,0.483,0.241,1.045,0,0,0,,,,,,,,,,,,,1,0.458,tau,0.02,1.045,0.02,1,0.464,+stall,0.02,0.086,0.0,1,0.385,+stall,0.02,0.049,0.0,1,0.626,tau,0.02,0.993,0.0
+1786802686.194,7,FORMED,,4,0.559,0.459,1.008,0,0,0,,,,,,,,,,,,,1,0.536,tau,0.02,1.008,0.0,1,0.482,tau,0.02,0.997,0.02,1,0.38,+stall,0.02,0.046,0.0,1,0.839,tau,0.011,0.95,0.0
+1786802706.811,8,FORMED,,4,0.432,0.164,1.315,0,0,0,,,,,,,,,,,,,1,0.387,tau,0.02,1.045,0.0,1,0.515,tau,0.02,0.862,0.04,1,0.351,tau,0.02,1.315,0.0,1,0.475,tau,0.02,1.139,0.02

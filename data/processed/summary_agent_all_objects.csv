@@ -1,0 +1,12 @@
+object,object_set,n,approaches,first_try,grasped,placed,robot_span_s,max_flex,closures_per_attempt,verdicts,formed_per_closure,thumb_fires_rate,depth_spread
+ball,known,5,,,,,7.2,0.78,1.6,8,0.62,0.8,0.17
+soft_ball,known,4,,,,,5.05,0.82,1.5,6,0.0,0.0,
+stapler,known,5,,,,,0.0,0.86,0.8,4,1.0,1.0,0.29
+plastic_cap,known,10,,,,,10.25,0.77,1.7,17,0.35,0.0,0.21
+cat_toy,known,6,,,,,4.92,0.87,1.67,10,0.4,0.33,0.13
+cube,unseen,5,,,,,60.7,0.87,5.8,29,0.24,0.8,0.23
+fish,unseen,5,,,,,62.06,0.89,4.8,24,0.33,0.4,0.19
+Soy Sauce Bottle,unseen,5,,,,,2.86,0.88,1.4,7,0.71,1.0,0.12
+Thermos Lid,unseen,5,,,,,44.72,0.9,5.6,28,0.43,1.0,0.21
+Hand Cream Tube,unseen,5,,,,,7.12,0.75,1.6,8,0.62,0.6,0.18
+Sponge,unseen,5,,,,,16.66,0.88,1.8,9,0.22,0.25,0.18

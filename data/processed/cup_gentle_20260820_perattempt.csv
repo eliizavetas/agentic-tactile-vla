@@ -1,0 +1,7 @@
+attempt_key,condition,object,mark_n,intact,contacts_seen,approaches_ledger,notes,window_s,n_verdicts,verdict_labels,dds_label,dds_contacts,dds_fingers,depth_mean,tau_peak_max,source_session
+cup-gentle|3,agent-GENTLE-manual,cup,3,,,,,53.7,2,EMPTY|EMPTY,EMPTY,0,,,2.15,20260820_205643
+cup-gentle|4,agent-GENTLE-manual,cup,4,,,,,49.4,1,CROOKED,CROOKED,4,thumb+middle+ring+pinky,0.69,2.037,20260820_205643
+cup-gentle|8,agent-GENTLE-manual,cup,8,,,,,63.4,4,EMPTY|EMPTY|EMPTY|EMPTY,EMPTY,0,,,1.497,20260820_205643
+cup-gentle|10,agent-GENTLE-manual,cup,10,,,,,78.2,0,,,,,,,20260820_205643
+cup-gentle|11,agent-GENTLE-manual,cup,11,,,,,50.1,0,,,,,,,20260820_205643
+cup-gentle|13,agent-GENTLE-manual,cup,13,,,,,70.8,0,,,,,,,20260820_205643

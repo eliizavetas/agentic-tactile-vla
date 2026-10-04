@@ -1,0 +1,7 @@
+object,n,approaches,first_try,grasped,placed,robot_span_s,max_flex,n_verdicts,formed_per_attempt,formed_rate,object_intact,dropped_in_transport,notes
+soft_ball,4,,,,,,,6,0,0.0,,,outcome not recorded
+ball,5,,,,,,,8,5,1.0,,,outcome not recorded
+stapler,5,,,,,,,4,4,0.8,,,outcome not recorded
+plastic_cup,10,1.0,1.0,1.0,1.0,,,17,4,0.4,0.0,0.0,crushed
+cat_toy,6,1.0,1.0,1.0,1.0,,,10,4,0.67,1.0,0.5,"dropped in transport, re-grasped"
+cube,5,,0.2,1.0,1.0,,,29,5,1.0,1.0,0.0,"first four cube attempts took 6-10 approaches (range across the four, not per attempt); grasped immediately"

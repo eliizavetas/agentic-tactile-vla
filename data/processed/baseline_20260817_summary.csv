@@ -1,0 +1,7 @@
+object,n,approaches,first_try,grasped,placed,robot_span_s,max_flex
+soft_ball,5,1.2,0.8,1.0,1.0,12.52,0.88
+ball,5,1.0,1.0,1.0,1.0,20.3,0.88
+stapler,5,1.0,1.0,1.0,1.0,6.54,0.85
+plastic_cap,5,1.4,0.6,1.0,1.0,7.38,0.9
+cat_toy,5,2.8,0.6,0.8,0.6,39.62,0.9
+cube,5,,,,,238.52,0.8

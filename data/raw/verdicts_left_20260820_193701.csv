@@ -1,0 +1,13 @@
+t,attempt,label,actual,profile,prompt,n_contacts,depth_mean,depth_spread,tau_peak_max,repeat_of_previous,n_since_success,timed_out,thumb_contact,thumb_q,thumb_why,thumb_err,thumb_taupk,thumb_taudur,thumb_aux_contact,thumb_aux_q,thumb_aux_why,thumb_aux_err,thumb_aux_taupk,thumb_aux_taudur,index_contact,index_q,index_why,index_err,index_taupk,index_taudur,middle_contact,middle_q,middle_why,middle_err,middle_taupk,middle_taudur,ring_contact,ring_q,ring_why,ring_err,ring_taupk,ring_taudur,pinky_contact,pinky_q,pinky_why,pinky_err,pinky_taupk,pinky_taudur
+1787225821.084,1,CROOKED,,NORMAL,pick up the object and place it down,1,0.778,,1.303,0,0,0,0,,,,1.211,0.0,,,,,,,1,0.778,+dur,0.02,1.274,0.201,0,,,,0.952,0.04,0,,,,1.303,0.04,0,,,,0.85,0.04
+1787225827.669,2,EMPTY,,NORMAL,pick up the object and place it down,0,,,1.294,0,1,0,0,,,,1.105,0.06,,,,,,,0,,,,1.272,0.06,0,,,,1.294,0.021,0,,,,1.218,0.061,0,,,,1.237,0.021
+1787225873.227,3,EMPTY,,NORMAL,pick up the object and place it down,0,,,1.607,0,2,0,0,,,,1.392,0.04,,,,,,,0,,,,1.607,0.0,0,,,,1.288,0.0,0,,,,1.324,0.0,0,,,,1.356,0.0
+1787225878.744,4,EMPTY,,NORMAL,pick up the object and place it down,0,,,1.308,0,3,0,0,,,,1.022,0.081,,,,,,,0,,,,1.304,0.201,0,,,,1.238,0.081,0,,,,1.096,0.061,0,,,,1.308,0.061
+1787225888.021,5,EMPTY,,NORMAL,pick up the object and place it down,0,,,1.397,0,4,0,0,,,,0.99,0.1,,,,,,,0,,,,1.239,0.121,0,,,,1.397,0.0,0,,,,1.219,0.0,0,,,,0.853,0.0
+1787225893.088,6,EMPTY,,NORMAL,pick up the object and place it down,0,,,1.679,0,5,0,0,,,,1.37,0.141,,,,,,,0,,,,1.519,0.02,0,,,,1.446,0.02,0,,,,1.679,0.02,0,,,,1.614,0.02
+1787225899.550,7,CROOKED,,NORMAL,pick up the object and place it down,1,0.633,,1.454,0,6,0,0,,,,0.994,0.121,,,,,,,1,0.633,+dur,0.02,0.947,0.201,0,,,,0.972,0.04,0,,,,1.454,0.081,0,,,,1.374,0.061
+1787225907.741,8,EMPTY,,NORMAL,pick up the object and place it down,0,,,1.337,0,7,0,0,,,,0.994,0.1,,,,,,,0,,,,1.0,0.301,0,,,,1.253,0.1,0,,,,1.306,0.0,0,,,,1.337,0.0
+1787226015.046,9,FORMED,,NORMAL,pick up the object and place it down,3,0.747,0.142,1.37,0,0,0,0,,,,0.968,0.141,,,,,,,1,0.657,+dur,0.02,0.969,0.202,1,0.786,+dur,0.02,0.959,0.161,0,,,,1.37,0.06,1,0.799,+dur,0.02,0.928,0.202
+1787226077.156,10,FORMED,,NORMAL,pick up the object and place it down,2,0.571,0.31,1.374,0,0,0,0,,,,0.958,0.121,,,,,,,1,0.726,+dur,0.02,1.131,0.201,0,,,,1.264,0.221,1,0.416,stall,0.02,0.018,0.0,0,,,,1.374,0.161
+1787226084.275,11,EMPTY,,NORMAL,pick up the object and place it down,0,,,2.35,0,8,0,0,,,,1.919,0.0,,,,,,,0,,,,2.194,0.0,0,,,,2.082,0.1,0,,,,2.35,0.02,0,,,,2.22,0.0
+1787226843.336,12,EMPTY,,NORMAL,pick up the object and place it down,0,,,1.481,0,9,0,0,,,,1.481,0.201,,,,,,,0,,,,1.447,0.08,0,,,,1.243,0.1,0,,,,1.281,0.1,0,,,,1.438,0.1

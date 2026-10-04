@@ -1,0 +1,18 @@
+t,attempt,label,actual,profile,prompt,n_contacts,depth_mean,depth_spread,tau_peak_max,repeat_of_previous,n_since_success,timed_out,thumb_contact,thumb_q,thumb_why,thumb_err,thumb_taupk,thumb_taudur,thumb_aux_contact,thumb_aux_q,thumb_aux_why,thumb_aux_err,thumb_aux_taupk,thumb_aux_taudur,index_contact,index_q,index_why,index_err,index_taupk,index_taudur,middle_contact,middle_q,middle_why,middle_err,middle_taupk,middle_taudur,ring_contact,ring_q,ring_why,ring_err,ring_taupk,ring_taudur,pinky_contact,pinky_q,pinky_why,pinky_err,pinky_taupk,pinky_taudur
+1787055272.854,1,EMPTY,,NORMAL,pick up the object and place it down,0,,,1.447,0,0,0,,,,,,,,,,,,,0,,,,1.017,0.462,0,,,,1.016,0.02,0,,,,1.373,0.181,0,,,,1.447,0.06
+1787055281.882,2,EMPTY,,NORMAL,pick up the object and place it down,0,,,1.382,0,1,0,,,,,,,,,,,,,0,,,,1.088,0.161,0,,,,0.827,0.0,0,,,,0.965,0.0,0,,,,1.382,0.0
+1787055322.469,3,EMPTY,,NORMAL,pick up the object and place it down,0,,,0.998,0,2,0,,,,,,,,,,,,,0,,,,0.998,0.321,0,,,,0.96,0.12,0,,,,0.936,0.141,0,,,,0.925,0.1
+1787055341.861,4,EMPTY,,NORMAL,pick up the object and place it down,0,,,1.223,0,3,0,,,,,,,,,,,,,0,,,,0.999,0.181,0,,,,0.807,0.0,0,,,,1.188,0.0,0,,,,1.223,0.0
+1787055350.283,5,EMPTY,,NORMAL,pick up the object and place it down,0,,,1.265,0,4,0,,,,,,,,,,,,,0,,,,1.265,0.04,0,,,,0.74,0.0,0,,,,0.841,0.0,0,,,,0.855,0.02
+1787055387.300,6,EMPTY,,NORMAL,pick up the object and place it down,0,,,1.113,0,5,0,,,,,,,,,,,,,0,,,,1.113,0.241,0,,,,0.188,0.0,0,,,,0.879,0.0,0,,,,0.581,0.0
+1787055411.042,7,EMPTY,,NORMAL,pick up the object and place it down,0,,,1.285,0,6,0,,,,,,,,,,,,,0,,,,0.979,0.161,0,,,,0.905,0.08,0,,,,1.285,0.0,0,,,,1.041,0.06
+1787055419.784,8,EMPTY,,NORMAL,pick up the object and place it down,0,,,1.31,0,7,0,,,,,,,,,,,,,0,,,,1.184,0.0,0,,,,1.259,0.02,0,,,,1.106,0.04,0,,,,1.31,0.06
+1787055436.450,9,EMPTY,,NORMAL,pick up the object and place it down,0,,,1.489,0,8,0,,,,,,,,,,,,,0,,,,0.992,0.02,0,,,,0.974,0.0,0,,,,1.489,0.02,0,,,,0.31,0.0
+1787055461.419,10,EMPTY,,NORMAL,pick up the object and place it down,0,,,1.362,0,9,0,,,,,,,,,,,,,0,,,,1.006,0.0,0,,,,1.037,0.201,0,,,,1.1,0.161,0,,,,1.362,0.0
+1787055469.235,11,EMPTY,,NORMAL,pick up the object and place it down,0,,,1.124,0,10,0,,,,,,,,,,,,,0,,,,1.045,0.241,0,,,,1.124,0.02,0,,,,1.022,0.0,0,,,,0.796,0.0
+1787055474.724,12,CROOKED,,NORMAL,pick up the object and place it down,2,0.443,0.237,1.652,0,11,0,,,,,,,,,,,,,1,0.325,stall,0.02,1.005,0.0,1,0.562,stall,0.02,0.929,0.0,0,,,,1.12,0.343,0,,,,1.652,0.0
+1787055482.408,13,EMPTY,,NORMAL,pick up the object and place it down,0,,,2.181,0,12,0,,,,,,,,,,,,,0,,,,2.181,0.06,0,,,,0.854,0.0,0,,,,1.036,0.02,0,,,,0.97,0.0
+1787055498.753,14,EMPTY,,NORMAL,pick up the object and place it down,0,,,1.018,0,13,0,,,,,,,,,,,,,0,,,,0.996,0.0,0,,,,0.963,0.382,0,,,,1.018,0.08,0,,,,0.943,0.141
+1787055506.288,15,EMPTY,,NORMAL,pick up the object and place it down,0,,,1.579,0,14,0,,,,,,,,,,,,,0,,,,1.219,0.0,0,,,,1.579,0.0,0,,,,1.133,0.1,0,,,,1.147,0.0
+1787055512.219,16,CROOKED,,NORMAL,pick up the object and place it down,1,0.349,,1.415,0,15,0,,,,,,,,,,,,,1,0.349,stall,0.02,0.078,0.0,0,,,,1.307,0.02,0,,,,1.253,0.06,0,,,,1.415,0.08
+1787055534.591,17,CROOKED,,NORMAL,pick up the object and place it down,1,0.436,,2.098,0,16,0,,,,,,,,,,,,,1,0.436,stall,0.02,0.994,0.0,0,,,,0.961,0.0,0,,,,1.026,0.261,0,,,,2.098,0.0

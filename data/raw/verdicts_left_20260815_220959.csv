@@ -1,0 +1,8 @@
+t,attempt,label,actual,n_contacts,depth_mean,depth_spread,tau_peak_max,repeat_of_previous,n_since_success,timed_out,thumb_contact,thumb_q,thumb_why,thumb_err,thumb_taupk,thumb_taudur,thumb_aux_contact,thumb_aux_q,thumb_aux_why,thumb_aux_err,thumb_aux_taupk,thumb_aux_taudur,index_contact,index_q,index_why,index_err,index_taupk,index_taudur,middle_contact,middle_q,middle_why,middle_err,middle_taupk,middle_taudur,ring_contact,ring_q,ring_why,ring_err,ring_taupk,ring_taudur,pinky_contact,pinky_q,pinky_why,pinky_err,pinky_taupk,pinky_taudur
+1786802999.414,1,EMPTY,,0,,,1.478,0,0,0,,,,,,,,,,,,,0,,,,1.047,0.362,0,,,,0.967,0.201,0,,,,1.155,0.0,0,,,,1.478,0.222
+1786803006.388,2,EMPTY,,0,,,2.378,0,1,0,,,,,,,,,,,,,0,,,,1.263,0.161,0,,,,2.206,0.02,0,,,,1.228,0.02,0,,,,2.378,0.0
+1786803015.070,3,EMPTY,,0,,,1.076,0,2,0,,,,,,,,,,,,,0,,,,1.076,0.323,0,,,,0.724,0.02,0,,,,0.859,0.0,0,,,,0.179,0.0
+1786803029.197,4,CROOKED,,1,0.491,,2.185,0,3,0,,,,,,,,,,,,,0,,,,1.266,0.0,0,,,,2.185,0.0,1,0.491,stall,0.02,0.051,0.0,0,,,,1.186,0.14
+1786803041.192,5,CROOKED,,2,0.262,0.246,1.748,0,4,0,,,,,,,,,,,,,1,0.139,stall,0.02,0.019,0.0,1,0.385,stall,0.02,0.086,0.0,0,,,,1.748,0.0,0,,,,1.3,0.06
+1786803048.830,6,EMPTY,,0,,,2.288,0,5,0,,,,,,,,,,,,,0,,,,2.288,0.02,0,,,,1.844,0.0,0,,,,2.135,0.021,0,,,,1.669,0.0
+1786803056.849,7,FORMED,,3,0.419,0.094,1.0,0,0,0,,,,,,,,,,,,,1,0.386,stall,0.02,1.0,0.0,1,0.392,stall,0.02,0.045,0.0,1,0.48,stall,0.02,0.018,0.0,0,,,,0.096,0.0

@@ -1,0 +1,61 @@
+condition,object_set,object,n,approaches_ledger,grasped,placed,first_try,robot_span_s,lead_in_s,max_flex,closure_events,mark_to_mark_s,n_verdicts,verdict_labels,agent_formed,object_intact,dropped_in_transport,source_session,notes
+agent,known,soft_ball,1,,,,,,,,,49.3,3,CROOKED|EMPTY|EMPTY,0,,,20260818_215104,outcome not recorded
+agent,known,soft_ball,2,,,,,,,,,13.4,1,EMPTY,0,,,20260818_215104,outcome not recorded
+agent,known,soft_ball,3,,,,,,,,,15.2,1,CROOKED,0,,,20260818_215104,outcome not recorded
+agent,known,soft_ball,4,,,,,,,,,22.9,1,EMPTY,0,,,20260818_215104,outcome not recorded
+agent,known,ball,1,,,,,,,,,53.7,1,FORMED,1,,,20260818_215104,outcome not recorded
+agent,known,ball,2,,,,,,,,,24.0,1,FORMED,1,,,20260818_215104,outcome not recorded
+agent,known,ball,3,,,,,,,,,20.3,1,FORMED,1,,,20260818_215104,outcome not recorded
+agent,known,ball,4,,,,,,,,,67.2,3,CROOKED|FORMED|EMPTY,1,,,20260818_215104,outcome not recorded
+agent,known,ball,5,,,,,,,,,29.7,2,FORMED|EMPTY,1,,,20260818_215104,outcome not recorded
+agent,known,stapler,1,,,,,,,,,32.5,1,FORMED,1,,,20260818_215104,outcome not recorded
+agent,known,stapler,2,,,,,,,,,12.8,0,,0,,,20260818_215104,outcome not recorded
+agent,known,stapler,3,,,,,,,,,12.8,1,FORMED,1,,,20260818_215104,outcome not recorded
+agent,known,stapler,4,,,,,,,,,16.9,1,FORMED,1,,,20260818_215104,outcome not recorded
+agent,known,stapler,5,,,,,,,,,,1,FORMED,1,,,20260818_215104,outcome not recorded
+agent,known,plastic_cap,1,1,1,1,1,,,,,20.8,1,EMPTY,0,0,0,20260819_022049,crushed; renamed from plastic_cup
+agent,known,plastic_cap,2,1,1,1,1,,,,,28.7,1,EMPTY,0,0,0,20260819_022049,crushed; renamed from plastic_cup
+agent,known,plastic_cap,3,1,1,1,1,,,,,38.6,1,CROOKED,0,0,0,20260819_022049,crushed; renamed from plastic_cup
+agent,known,plastic_cap,4,1,1,1,1,,,,,66.3,2,CROOKED|EMPTY,0,0,0,20260819_022049,crushed; renamed from plastic_cup
+agent,known,plastic_cap,5,1,1,1,1,,,,,33.9,2,FORMED|CROOKED,1,0,0,20260819_022049,crushed; renamed from plastic_cup
+agent,known,plastic_cap,6,1,1,1,1,,,,,19.8,2,FORMED|CROOKED,1,0,0,20260819_022049,crushed; renamed from plastic_cup
+agent,known,plastic_cap,7,1,1,1,1,,,,,19.9,1,CROOKED,0,0,0,20260819_022049,crushed; renamed from plastic_cup
+agent,known,plastic_cap,8,1,1,1,1,,,,,22.7,2,FORMED|FORMED,1,0,0,20260819_022049,crushed; renamed from plastic_cup
+agent,known,plastic_cap,9,1,1,1,1,,,,,22.8,3,CROOKED|CROOKED|CROOKED,0,0,0,20260819_022049,crushed; renamed from plastic_cup
+agent,known,plastic_cap,10,1,1,1,1,,,,,39.9,2,FORMED|FORMED,1,0,0,20260819_022049,crushed; renamed from plastic_cup
+agent,known,cat_toy,1,1,1,1,1,,,,,18.7,1,CROOKED,0,1,0,20260819_022049,
+agent,known,cat_toy,2,1,1,1,1,,,,,36.1,1,FORMED,1,1,1,20260819_022049,"dropped in transport, re-grasped"
+agent,known,cat_toy,3,1,1,1,1,,,,,68.9,1,CROOKED,0,1,1,20260819_022049,"dropped in transport, re-grasped"
+agent,known,cat_toy,4,1,1,1,1,,,,,31.3,2,FORMED|CROOKED,1,1,1,20260819_022049,"dropped in transport, re-grasped"
+agent,known,cat_toy,5,1,1,1,1,,,,,32.2,2,CROOKED|FORMED,1,1,0,20260819_022049,
+agent,known,cat_toy,6,1,1,1,1,,,,,36.6,3,FORMED|EMPTY|EMPTY,1,1,0,20260819_022049,
+agent,unseen,cube,1,,1,1,0,,,,,128.5,10,EMPTY|EMPTY|CROOKED|EMPTY|CROOKED|EMPTY|EMPTY|FORMED|CROOKED|CROOKED,1,1,0,20260819_022049,"first four cube attempts took 6-10 approaches (range across the four, not per attempt)"
+agent,unseen,cube,2,,1,1,0,,,,,69.8,5,FORMED|CROOKED|EMPTY|CROOKED|CROOKED,1,1,0,20260819_022049,"first four cube attempts took 6-10 approaches (range across the four, not per attempt)"
+agent,unseen,cube,3,,1,1,0,,,,,38.6,2,CROOKED|FORMED,1,1,0,20260819_022049,"first four cube attempts took 6-10 approaches (range across the four, not per attempt)"
+agent,unseen,cube,4,,1,1,0,,,,,177.5,11,CROOKED|CROOKED|CROOKED|CROOKED|FORMED|CROOKED|CROOKED|EMPTY|FORMED|CROOKED|FORMED,1,1,0,20260819_022049,"first four cube attempts took 6-10 approaches (range across the four, not per attempt)"
+agent,unseen,cube,5,1,1,1,1,,,,,,1,FORMED,1,1,0,20260819_022049,grasped immediately
+agent,unseen,fish,1,,,,,54.1,7.3,0.913,9,,6,EMPTY|CROOKED|FORMED|EMPTY|FORMED|EMPTY,1,,,20260820_013519,
+agent,unseen,fish,2,,,,,26.6,9.3,0.898,6,,5,CROOKED|EMPTY|EMPTY|FORMED|EMPTY,1,,,20260820_013519,
+agent,unseen,fish,3,,,,,43.5,6.6,0.889,14,,5,FORMED|CROOKED|CROOKED|FORMED|EMPTY,1,,,20260820_013519,
+agent,unseen,fish,4,,,,,8.2,6.3,0.873,3,,2,FORMED|EMPTY,1,,,20260820_013519,
+agent,unseen,fish,5,,,,,7.8,6.1,0.906,2,,2,FORMED|EMPTY,1,,,20260820_013519,
+agent,unseen,Soy Sauce Bottle,1,,,,,14.7,8.8,0.9,5,,1,FORMED,1,,,20260820_013519,
+agent,unseen,Soy Sauce Bottle,2,,,,,9.8,0.6,0.852,3,,1,CROOKED,0,,,20260820_013519,
+agent,unseen,Soy Sauce Bottle,3,,,,,7.8,6.8,0.941,2,,2,FORMED|EMPTY,1,,,20260820_013519,
+agent,unseen,Soy Sauce Bottle,4,,,,,7.5,5.8,0.889,2,,2,FORMED|EMPTY,1,,,20260820_013519,
+agent,unseen,Soy Sauce Bottle,5,,,,,40.8,1.0,0.946,9,,7,EMPTY|FORMED|EMPTY|EMPTY|EMPTY|EMPTY|EMPTY,1,,,20260820_013519,
+agent,unseen,Thermos Lid,1,,,,,50.9,2.1,0.952,20,,7,EMPTY|EMPTY|CROOKED|FORMED|EMPTY|EMPTY|EMPTY,1,,,20260820_013519,
+agent,unseen,Thermos Lid,2,,,,,47.8,0.3,0.941,15,,5,EMPTY|EMPTY|EMPTY|FORMED|CROOKED,1,,,20260820_013519,
+agent,unseen,Thermos Lid,3,,,,,6.7,3.5,0.705,3,,1,FORMED,1,,,20260820_013519,
+agent,unseen,Thermos Lid,4,,,,,101.3,7.9,0.954,20,,6,FORMED|EMPTY|CROOKED|EMPTY|FORMED|FORMED,1,,,20260820_013519,
+agent,unseen,Thermos Lid,5,,,,,49.5,0.2,0.957,13,,6,EMPTY|EMPTY|FORMED|FORMED|FORMED|EMPTY,1,,,20260820_013519,
+agent,unseen,Hand Cream Tube,1,,,,,8.8,7.7,0.949,2,,2,FORMED|EMPTY,1,,,20260820_013519,
+agent,unseen,Hand Cream Tube,2,,,,,0.0,6.1,0.887,1,,1,FORMED,1,,,20260820_013519,
+agent,unseen,Hand Cream Tube,3,,,,,11.3,0.5,0.958,3,,3,EMPTY|FORMED|EMPTY,1,,,20260820_013519,
+agent,unseen,Hand Cream Tube,4,,,,,21.2,6.0,0.934,5,,3,EMPTY|CROOKED|EMPTY,0,,,20260820_013519,
+agent,unseen,Hand Cream Tube,5,,,,,7.6,5.7,0.907,2,,2,FORMED|EMPTY,1,,,20260820_013519,
+agent,unseen,Sponge,1,,,,,7.1,7.7,0.926,2,,2,CROOKED|CROOKED,0,,,20260820_013519,
+agent,unseen,Sponge,2,,,,,7.4,6.3,0.899,2,,2,CROOKED|CROOKED,0,,,20260820_013519,
+agent,unseen,Sponge,3,,,,,9.0,6.1,0.883,3,,1,FORMED,1,,,20260820_013519,
+agent,unseen,Sponge,4,,,,,0.0,5.6,0.868,1,,2,FORMED|FORMED,1,,,20260820_013519,
+agent,unseen,Sponge,5,,,,,7.7,5.5,0.894,2,,2,FORMED|EMPTY,1,,,20260820_013519,
